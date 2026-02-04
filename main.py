@@ -119,7 +119,7 @@ def get_task_file():
                     sys.exit(0)
                 
                 if file_path.lower() == 'skip':
-                    return None
+                    return None, None
                 
                 # Handle paths with or without quotes
                 file_path = file_path.strip('"\'')
@@ -134,12 +134,18 @@ def get_task_file():
                     print(f"❌ {error}")
                     print("Please try again or type 'skip' to continue without a file.")
                 else:
-                    print(f"✓ File loaded successfully: {Path(file_path).name}")
-                    print(f"  ({len(content)} characters read)")
-                    return content
+                    file_info = {
+                        'path': file_path,
+                        'name': Path(file_path).name,
+                        'size': len(content),
+                        'type': Path(file_path).suffix.lower()
+                    }
+                    print(f"✓ File loaded successfully: {file_info['name']}")
+                    print(f"  ({file_info['size']} characters read)")
+                    return content, file_info
         
         elif choice == 'n':
-            return None
+            return None, None
         else:
             print("❌ Please enter 'y' or 'n'.")
 
@@ -201,13 +207,13 @@ Your goals:
 Be technical, specific, and focus on code implementation details."""
 
 
-def chat_loop(client, role, repo_url, task_content=None):
+def chat_loop(client, role, repo_url, task_content=None, file_info=None):
     """Main chat loop with the LLM."""
     print("\n" + "="*60)
     print(f"          CHAT SESSION - {role.replace('_', ' ').upper()}")
     print("="*60)
     print("\nYou can now chat with the assistant.")
-    print("Type 'EXIT' to quit the program.\n")
+    print("Type 'EXIT' to quit or 'LIST' to view loaded resources.\n")
     
     # Initialize conversation history
     system_prompt = get_system_prompt(role, repo_url, task_content)
@@ -222,6 +228,24 @@ def chat_loop(client, role, repo_url, task_content=None):
             print("Thank you for using Better Jira Generator!")
             print("="*60 + "\n")
             break
+        
+        # Handle LIST command
+        if user_input.upper() == 'LIST':
+            print("\n" + "-"*60)
+            print("LOADED RESOURCES")
+            print("-"*60)
+            print(f"Role: {role.replace('_', ' ').title()}")
+            print(f"Repository: {repo_url}")
+            if file_info:
+                print(f"\nTask File:")
+                print(f"  Name: {file_info['name']}")
+                print(f"  Path: {file_info['path']}")
+                print(f"  Type: {file_info['type']}")
+                print(f"  Size: {file_info['size']:,} characters")
+            else:
+                print("\nTask File: None")
+            print("-"*60)
+            continue
         
         if not user_input:
             continue
@@ -264,13 +288,13 @@ def main():
         role = get_user_role()
         
         # Get task description file (optional)
-        task_content = get_task_file()
+        task_content, file_info = get_task_file()
         
         # Get GitHub repository
         repo_url = get_github_repo()
         
         # Start chat loop
-        chat_loop(client, role, repo_url, task_content)
+        chat_loop(client, role, repo_url, task_content, file_info)
         
     except KeyboardInterrupt:
         print("\n\nProgram interrupted by user. Goodbye!")

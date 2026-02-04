@@ -50,19 +50,37 @@ python main.py
    - Choose `1` for Product Manager (focus on feature requirements)
    - Choose `2` for Developer (focus on implementation)
 
-2. **Provide a GitHub repository URL:**
+2. **Upload a task description file (optional):**
+   - When prompted, choose `y` to upload a file or `n` to skip
+   - Supported formats: PDF, TXT, DOC/DOCX
+   - Enter the file path (supports `~` for home directory)
+   - Example: `~/Documents/requirements.pdf`
+   - The file content will be included in the AI's context
+
+3. **Provide a GitHub repository URL:**
    - Enter the URL of the codebase you're working with
    - (Full repo analysis coming in future versions)
 
-3. **Chat with the assistant:**
+4. **Chat with the assistant:**
    - Ask questions about features, requirements, or implementation
    - The AI will provide context-aware assistance based on your role
+   - **Use `LIST` to view loaded resources** (role, repository, uploaded files)
    - Type `EXIT` at any time to quit
+
+### Commands During Chat
+
+- **`LIST`** - Display all loaded resources:
+  - Your current role
+  - GitHub repository URL
+  - Task file details (name, path, type, size)
+- **`EXIT`** - Quit the program
 
 ## Features (CLI Prototype - Chunk 1)
 
 ✅ Role-based chat interface (Product Manager or Developer)  
 ✅ Integration with Groq LLM (using Llama 3.1)  
+✅ File upload support (PDF, TXT, DOC/DOCX) for task descriptions  
+✅ `LIST` command to view loaded resources  
 ✅ Conversation history maintained throughout session  
 ✅ Error handling for missing environment configuration  
 ✅ Clean exit with EXIT command  
