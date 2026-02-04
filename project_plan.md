@@ -1,0 +1,80 @@
+# Better Jira Generator  
+**Ryan Bouche – Tech 6200 Assignment 3**
+
+## General Instruction
+This file contains the overview and project description. Each piece of the project will be implemented in chunks and tested. 
+
+## General Vision and Goal
+The goal of this program is to create a chatbot that will help product managers write better descriptions of their requirements, help developers find the area of code to work in, and finally create a test plan for the task.
+(Jira is a popular issue and project tracking software. For many developers and tech managers, Jira has become a common noun for a development task, much like “Kleenex” is a common noun for a tissue, or “Google” is to do a web search.)
+
+## Core Features
+- **Product Manager:** Use a chatbot familiar with the codebase and product features to write more specific descriptions of tasks and improvements that can be handed off to a developer.
+- **Developer:** Load a Jira task description into the chatbot and receive suggestions for which files are needed to make those changes in the code.
+- **Developer / QA Handoff:** Transform the Jira description and proposed code changes into a set of acceptance criteria for a Quality Assurance engineer to test.
+
+## Target Audience
+- Product Managers  
+- Developers  
+- QA Engineers  
+
+## Technical Stack and Architecture
+- Python  
+- Database: MySQL  
+- Hosting: Heroku  
+- Frontend: HTML / CSS  
+
+## Non-Functional Requirements
+- Users must authenticate  
+- Hosted online  
+- Rate and time limits on AI generation  
+
+## Minimum Viable Product (MVP)
+- AI with knowledge of the codebase and product functionality  
+- UI for chat interaction and export of generated text  
+- Separate functions and workflows for Product Managers and Developers  
+
+## Nice-to-Have Features
+- Ability to upload images of mockups to help describe requested changes  
+- Add suggestions to QA for a test plan or Unit Tests
+
+## Data Model: RepositoryFile
+Defines a single indexed file within a repository.
+
+- **id** (BIGINT, primary key, auto-increment) — unique record identifier  
+- **path** (VARCHAR(1024), not null) — full repo-relative path (e.g., `src/api/orders/OrdersController.py`)  
+- **filename** (VARCHAR(255), not null) — base filename (e.g., `OrdersController.py`)  
+- **extension** (VARCHAR(20), null) — file extension (e.g., `py`, `js`, `sql`)  
+- **language** (VARCHAR(50), null) — inferred programming language  
+- **content_summary** (TEXT, null) — AI- or heuristic-generated summary of file purpose  
+- **symbols** (JSON, null) — extracted symbols such as classes, functions, or routes  
+- **last_modified_at** (DATETIME, not null) — last modified timestamp from version control  
+- **indexed_at** (DATETIME, not null) — timestamp when the file was indexed by the system  
+
+&nbsp;
+
+# Chunk 1: CLI prototype
+
+## Goals
+Set up an api connection to a free LLM. 
+Create a working prototype of the initial menu. 
+
+## Tasks
+1. Create env file and env.example with API info for a free LLM 
+2. Create a command line menu that asks if the user is a product manager or a developer
+    1. Error handling - Prompt user to contact the program developer if the env file does not exist
+3. Ask user to link to a github repo to use as a corpus of data  
+4. Create a chat with the user. 
+    1. Focus the product manager chat on new features for the project
+    2. Focus the developer chat on the project file structure and how to implement the feature
+    3. Allow the user to use a local file (pdf, txt, doc) to describe the task
+5. Keep the chat loop going , but give the user the option to type EXIT to close the program.  
+
+## Files to create
+- Main Application file
+- Environment file
+    - Install dependencies
+- Update the Readme with requirements and instructions on running the program
+
+## Commit the files
+- Prompt to commit the files to the repo 
