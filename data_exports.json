@@ -1,0 +1,28 @@
+{
+  "exports": [
+    {
+      "filename": "half-hour-calendar_20260210_184744.md",
+      "original_name": "half-hour-calendar",
+      "date": "2026-02-10T18:47:44.233328",
+      "user_type": "Product Manager",
+      "repository": "https://github.com/rightbit/Conference-Fusion",
+      "file_path": "/Users/ryanbouche/Documents/UVU/6200exports/half-hour-calendar_20260210_184744.md"
+    },
+    {
+      "filename": "moderator-list_20260210_211828.md",
+      "original_name": "moderator-list",
+      "date": "2026-02-10T21:18:28.827510",
+      "user_type": "Product Manager",
+      "repository": "https://github.com/rightbit/Conference-Fusion",
+      "file_path": "/Users/ryanbouche/Documents/UVU/6200exports/moderator-list_20260210_211828.md"
+    },
+    {
+      "filename": "moderator-email_20260210_213213.md",
+      "original_name": "moderator-email",
+      "date": "2026-02-10T21:32:13.792498",
+      "user_type": "Product Manager",
+      "repository": "https://github.com/rightbit/Conference-Fusion",
+      "file_path": "/Users/ryanbouche/Documents/UVU/6200exports/moderator-email_20260210_213213.md"
+    }
+  ]
+}

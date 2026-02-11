@@ -6,7 +6,9 @@ A chatbot to help product managers and developers with Jira task descriptions.
 
 import os
 import sys
+import json
 from pathlib import Path
+from datetime import datetime
 from groq import Groq
 from dotenv import load_dotenv
 import PyPDF2
@@ -14,7 +16,7 @@ from docx import Document
 
 
 def check_env_file():
-    """Check if .env file exists and has required API key."""
+    """Check if .env file exists and has required API key and save folder."""
     if not Path('.env').exists():
         print("\n❌ ERROR: .env file not found!")
         print("Please create a .env file with your GROQ_API_KEY.")
@@ -33,6 +35,283 @@ def check_env_file():
         sys.exit(1)
     
     return api_key
+
+
+def check_save_folder():
+    """Check if save folder is configured and exists, create if needed."""
+    save_folder = os.getenv('SAVE_FOLDER_PATH')
+    
+    if not save_folder:
+        print("\n⚠️  WARNING: SAVE_FOLDER_PATH not configured in .env file!")
+        print("Please enter a folder path where chat exports will be saved.")
+        print("Example: ~/Documents/JiraExports or /Users/username/JiraExports\n")
+        
+        while True:
+            folder_input = input("Enter save folder path: ").strip()
+            
+            if folder_input.upper() == 'EXIT':
+                print("\nGoodbye!")
+                sys.exit(0)
+            
+            if folder_input:
+                # Expand user home directory
+                if folder_input.startswith('~'):
+                    folder_input = os.path.expanduser(folder_input)
+                
+                save_folder = folder_input
+                
+                # Update .env file
+                try:
+                    with open('.env', 'r') as f:
+                        env_content = f.read()
+                    
+                    if 'SAVE_FOLDER_PATH=' in env_content:
+                        # Update existing line
+                        lines = env_content.split('\n')
+                        for i, line in enumerate(lines):
+                            if line.startswith('SAVE_FOLDER_PATH='):
+                                lines[i] = f'SAVE_FOLDER_PATH={save_folder}'
+                        env_content = '\n'.join(lines)
+                    else:
+                        # Add new line
+                        env_content += f'\nSAVE_FOLDER_PATH={save_folder}'
+                    
+                    with open('.env', 'w') as f:
+                        f.write(env_content)
+                    
+                    print(f"✓ Save folder path added to .env")
+                    break
+                except Exception as e:
+                    print(f"❌ Error updating .env file: {e}")
+                    print("Please add SAVE_FOLDER_PATH to your .env file manually.")
+                    sys.exit(1)
+    
+    # Expand user home directory if needed
+    if save_folder.startswith('~'):
+        save_folder = os.path.expanduser(save_folder)
+    
+    # Create folder if it doesn't exist
+    save_path = Path(save_folder)
+    if not save_path.exists():
+        try:
+            save_path.mkdir(parents=True, exist_ok=True)
+            print(f"✓ Created save folder: {save_folder}")
+        except Exception as e:
+            print(f"❌ Error creating save folder: {e}")
+            sys.exit(1)
+    
+    return str(save_path)
+
+
+def load_exports_data():
+    """Load the data_exports.json file."""
+    exports_file = Path('data_exports.json')
+    
+    if not exports_file.exists():
+        return {'exports': []}
+    
+    try:
+        with open(exports_file, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"⚠️  Warning: Could not load exports data: {e}")
+        return {'exports': []}
+
+
+def save_exports_data(data):
+    """Save data to data_exports.json file."""
+    exports_file = Path('data_exports.json')
+    try:
+        with open(exports_file, 'w') as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"❌ Error saving exports data: {e}")
+
+
+def save_chat_to_file(messages, save_folder, role, repo_url, file_info=None):
+    """Save chat conversation to a markdown file."""
+    print("\n" + "-"*60)
+    print("SAVE CHAT")
+    print("-"*60)
+    
+    # Prompt for filename
+    while True:
+        filename = input("\nEnter filename (without extension): ").strip()
+        
+        if filename.upper() == 'EXIT':
+            return None
+        
+        if not filename:
+            print("❌ Filename cannot be empty.")
+            continue
+        
+        # Sanitize filename
+        filename = "".join(c for c in filename if c.isalnum() or c in (' ', '-', '_')).strip()
+        filename = filename.replace(' ', '_')
+        
+        if not filename:
+            print("❌ Please enter a valid filename.")
+            continue
+        
+        break
+    
+    # Create full file path
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    full_filename = f"{filename}_{timestamp}.md"
+    file_path = Path(save_folder) / full_filename
+    
+    # Build markdown content
+    content = f"""# Better Jira Generator - Chat Export
+
+**Date:** {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}  
+**Role:** {role.replace('_', ' ').title()}  
+**Repository:** {repo_url}  
+"""
+    
+    if file_info:
+        content += f"**Task File:** {file_info['name']}  \n"
+    
+    content += "\n---\n\n"
+    
+    # Add conversation (skip system message)
+    for msg in messages[1:]:  # Skip system prompt
+        if msg['role'] == 'user':
+            content += f"## User\n\n{msg['content']}\n\n"
+        elif msg['role'] == 'assistant':
+            content += f"## Assistant\n\n{msg['content']}\n\n"
+    
+    # Save file
+    try:
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        # Register in data_exports.json
+        exports_data = load_exports_data()
+        export_entry = {
+            'filename': full_filename,
+            'original_name': filename,
+            'date': datetime.now().isoformat(),
+            'user_type': role.replace('_', ' ').title(),
+            'repository': repo_url,
+            'file_path': str(file_path)
+        }
+        exports_data['exports'].append(export_entry)
+        save_exports_data(exports_data)
+        
+        print(f"\n✓ Chat saved successfully!")
+        print(f"  File: {full_filename}")
+        print(f"  Location: {file_path}")
+        
+        return full_filename
+        
+    except Exception as e:
+        print(f"\n❌ Error saving file: {e}")
+        return None
+
+
+def list_chat_history():
+    """Display list of saved chats."""
+    exports_data = load_exports_data()
+    exports = exports_data.get('exports', [])
+    
+    if not exports:
+        print("\n" + "-"*60)
+        print("No saved chats found.")
+        print("-"*60)
+        return
+    
+    print("\n" + "="*60)
+    print("CHAT HISTORY")
+    print("="*60)
+    
+    for i, export in enumerate(exports, 1):
+        date_obj = datetime.fromisoformat(export['date'])
+        date_str = date_obj.strftime("%Y-%m-%d %H:%M")
+        
+        print(f"\n{i}. {export['original_name']}")
+        print(f"   File: {export['filename']}")
+        print(f"   Date: {date_str}")
+        print(f"   Role: {export['user_type']}")
+        print(f"   Repo: {export['repository']}")
+    
+    print("\n" + "="*60)
+
+
+def load_chat_from_file(save_folder):
+    """Load an existing chat file and return its messages."""
+    exports_data = load_exports_data()
+    exports = exports_data.get('exports', [])
+    
+    if not exports:
+        print("\n❌ No saved chats found.")
+        return None, None, None
+    
+    # Display list
+    list_chat_history()
+    
+    print("\nEnter the number of the chat to open (or 'cancel' to go back):")
+    
+    while True:
+        choice = input("\nChoice: ").strip()
+        
+        if choice.upper() in ['EXIT', 'CANCEL']:
+            return None, None, None
+        
+        try:
+            idx = int(choice) - 1
+            if 0 <= idx < len(exports):
+                export = exports[idx]
+                file_path = Path(export['file_path'])
+                
+                if not file_path.exists():
+                    print(f"\n❌ File not found: {file_path}")
+                    print("The file may have been moved or deleted.")
+                    print("\nWhat would you like to do?")
+                    print("1. Delete this entry from history")
+                    print("2. Keep the entry in history")
+                    
+                    while True:
+                        action = input("\nChoice (1 or 2): ").strip()
+                        
+                        if action == '1':
+                            # Remove entry from exports
+                            exports.remove(export)
+                            exports_data['exports'] = exports
+                            save_exports_data(exports_data)
+                            print("\n✓ Entry removed from history.")
+                            break
+                        elif action == '2':
+                            print("\n✓ Entry kept in history.")
+                            break
+                        else:
+                            print("❌ Please enter 1 or 2.")
+                    
+                    continue
+                
+                # Read the file and extract messages
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                # Parse markdown content back to messages
+                messages = []
+                sections = content.split('## ')
+                
+                for section in sections[1:]:  # Skip header
+                    if section.startswith('User'):
+                        msg_content = section.replace('User\n\n', '', 1).strip()
+                        messages.append({'role': 'user', 'content': msg_content})
+                    elif section.startswith('Assistant'):
+                        msg_content = section.replace('Assistant\n\n', '', 1).strip()
+                        messages.append({'role': 'assistant', 'content': msg_content})
+                
+                print(f"\n✓ Loaded chat: {export['original_name']}")
+                print(f"  {len(messages)} messages loaded")
+                
+                return messages, export.get('repository', ''), export.get('user_type', '').lower().replace(' ', '_')
+            else:
+                print(f"❌ Please enter a number between 1 and {len(exports)}.")
+        except ValueError:
+            print("❌ Please enter a valid number.")
 
 
 def get_user_role():
@@ -207,13 +486,19 @@ Your goals:
 Be technical, specific, and focus on code implementation details."""
 
 
-def chat_loop(client, role, repo_url, task_content=None, file_info=None):
+def chat_loop(client, role, repo_url, task_content=None, file_info=None, save_folder=None):
     """Main chat loop with the LLM."""
     print("\n" + "="*60)
     print(f"          CHAT SESSION - {role.replace('_', ' ').upper()}")
     print("="*60)
     print("\nYou can now chat with the assistant.")
-    print("Type 'EXIT' to quit or 'LIST' to view loaded resources.\n")
+    print("\nAvailable commands:")
+    print("  NEW     - Start a new chat session")
+    print("  SAVE    - Save current chat to markdown file")
+    print("  HISTORY - View saved chat history")
+    print("  OPEN    - Open and continue a saved chat")
+    print("  LIST    - View loaded resources")
+    print("  EXIT    - Quit the program\n")
     
     # Initialize conversation history
     system_prompt = get_system_prompt(role, repo_url, task_content)
@@ -228,6 +513,43 @@ def chat_loop(client, role, repo_url, task_content=None, file_info=None):
             print("Thank you for using Better Jira Generator!")
             print("="*60 + "\n")
             break
+        
+        # Handle NEW command
+        if user_input.upper() == 'NEW':
+            print("\n" + "-"*60)
+            print("Starting new chat session...")
+            print("-"*60)
+            messages = [{"role": "system", "content": system_prompt}]
+            print("✓ New chat session started.")
+            continue
+        
+        # Handle SAVE command
+        if user_input.upper() == 'SAVE':
+            if len(messages) <= 1:
+                print("\n❌ No conversation to save yet.")
+                continue
+            
+            saved_file = save_chat_to_file(messages, save_folder, role, repo_url, file_info)
+            if saved_file:
+                print("\nYou can continue chatting or type EXIT to quit.")
+            continue
+        
+        # Handle HISTORY command
+        if user_input.upper() == 'HISTORY':
+            list_chat_history()
+            continue
+        
+        # Handle OPEN command
+        if user_input.upper() == 'OPEN':
+            loaded_messages, loaded_repo, loaded_role = load_chat_from_file(save_folder)
+            
+            if loaded_messages:
+                # Update current conversation
+                messages = [{"role": "system", "content": system_prompt}]
+                messages.extend(loaded_messages)
+                
+                print("\n✓ Chat loaded. You can continue the conversation.")
+            continue
         
         # Handle LIST command
         if user_input.upper() == 'LIST':
@@ -244,6 +566,8 @@ def chat_loop(client, role, repo_url, task_content=None, file_info=None):
                 print(f"  Size: {file_info['size']:,} characters")
             else:
                 print("\nTask File: None")
+            print(f"\nSave Folder: {save_folder}")
+            print(f"Messages in current chat: {len(messages) - 1}")  # Exclude system message
             print("-"*60)
             continue
         
@@ -281,6 +605,9 @@ def main():
         # Check environment setup
         api_key = check_env_file()
         
+        # Check and setup save folder
+        save_folder = check_save_folder()
+        
         # Initialize Groq client
         client = Groq(api_key=api_key)
         
@@ -294,7 +621,7 @@ def main():
         repo_url = get_github_repo()
         
         # Start chat loop
-        chat_loop(client, role, repo_url, task_content, file_info)
+        chat_loop(client, role, repo_url, task_content, file_info, save_folder)
         
     except KeyboardInterrupt:
         print("\n\nProgram interrupted by user. Goodbye!")

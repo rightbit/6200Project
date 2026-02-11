@@ -78,3 +78,27 @@ Create a working prototype of the initial menu.
 
 ## Commit the files
 - Prompt to commit the files to the repo 
+
+# Chunk 2: Saving and storing data
+
+## Goals
+Save history of chats and Save markup file to use in Jira. 
+
+## Tasks
+1. Add a save folder path to the env and env example files
+    1. prompt the user at startup to add a folder path if one does not exist
+2. Add a command to save the output of the chat as a markup file that can be used in a Jira description or a Comment
+    1. Prompt for a filename before saving
+3. Create an internal json file called data_exports.json that stores the file name, date, and user type (Manager, Developer)  
+4. Refactor the command menu
+    1. Add a NEW command to start a new chat
+    2. Add a HISTORY command to list the saved chats
+    3. Add an OPEN command to display the contents of the file and continue the chat
+    4. Add a SAVE command to save the output as a markup file and register it in data_exports.json
+5. Update the readme with the menu commands
+
+## Files to create
+- data_exports.json
+
+## TODO
+- Create a HELP/MENU Command??

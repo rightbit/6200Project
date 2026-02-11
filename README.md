@@ -36,6 +36,10 @@ python3 -m pip install -r requirements.txt
      ```
      GROQ_API_KEY=gsk_your_actual_key_here
      ```
+   - Set your save folder path (optional - will be prompted if not set):
+     ```
+     SAVE_FOLDER_PATH=~/Documents/JiraExports
+     ```
 
 ## Running the Program
 
@@ -64,26 +68,51 @@ python main.py
 4. **Chat with the assistant:**
    - Ask questions about features, requirements, or implementation
    - The AI will provide context-aware assistance based on your role
-   - **Use `LIST` to view loaded resources** (role, repository, uploaded files)
-   - Type `EXIT` at any time to quit
+   - Use the commands below to manage your chat sessions
 
 ### Commands During Chat
 
+- **`NEW`** - Start a new chat session (clears current conversation)
+- **`SAVE`** - Save the current chat to a markdown file
+  - Prompts for a filename
+  - Saves to your configured save folder
+  - Registers the export in chat history
+- **`HISTORY`** - View all previously saved chats
+  - Shows filename, date, role, and repository
+- **`OPEN`** - Open and continue a previously saved chat
+  - Select from your chat history
+  - Loads all previous messages
+  - Continue the conversation where you left off
 - **`LIST`** - Display all loaded resources:
   - Your current role
   - GitHub repository URL
   - Task file details (name, path, type, size)
+  - Save folder location
+  - Number of messages in current chat
 - **`EXIT`** - Quit the program
 
-## Features (CLI Prototype - Chunk 1)
+### Saved Chat Files
+
+Chat exports are saved as markdown files (.md) that can be:
+- Copied directly into Jira descriptions or comments
+- Opened in any text editor or markdown viewer
+- Used as reference for future tasks
+- Continued later using the `OPEN` command
+
+Files are saved with a timestamp to prevent overwriting and are tracked in `data_exports.json` for easy retrieval.
+
+## Features (Current - Chunk 2)
 
 ✅ Role-based chat interface (Product Manager or Developer)  
 ✅ Integration with Groq LLM (using Llama 3.1)  
 ✅ File upload support (PDF, TXT, DOC/DOCX) for task descriptions  
-✅ `LIST` command to view loaded resources  
+✅ Command system: NEW, SAVE, HISTORY, OPEN, LIST, EXIT  
+✅ Save chats as markdown files for Jira  
+✅ Chat history tracking with metadata  
+✅ Resume previous conversations  
+✅ Configurable save folder with auto-creation  
 ✅ Conversation history maintained throughout session  
 ✅ Error handling for missing environment configuration  
-✅ Clean exit with EXIT command  
 
 ## Project Structure
 
@@ -93,6 +122,7 @@ python main.py
 ├── requirements.txt     # Python dependencies
 ├── .env.example        # Environment variable template
 ├── .env                # Your API keys (not committed to git)
+├── data_exports.json   # Chat history metadata
 ├── README.md           # This file
 ├── project_plan.md     # Detailed project planning
 └── LICENSE
