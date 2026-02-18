@@ -100,5 +100,23 @@ Save history of chats and Save markup file to use in Jira.
 ## Files to create
 - data_exports.json
 
-## TODO
-- Create a HELP/MENU Command??
+---
+# Chunk 3: Data files continued: saved_session.json 
+
+## Goals
+Save session history of last setup
+
+## Tasks
+1. At startup, If saved_session.json does not exist, create saved_session.json
+2. check if saved_session.json is populated with an entry
+    1. Show the contents of the saved_session file
+    2. Ask if the user wants to continue from the last chat. 
+    3. If the user says no, clear the contents of saved_session.json
+2. Whenever user input changes regarding Role, or what entry from History, or filename, save that and other useful data to saved_session.json
+3. When a user chooses NEW from the menu, clear the saved_session.json 
+4. Create a HELP Command that will list the current menu commands.
+
+
+## Files to create
+- saved_session.json 
+

@@ -48,6 +48,13 @@ Run the main application:
 python main.py
 ```
 
+### Session Persistence
+
+The application automatically saves your session (role, repository, task file) to `saved_session.json`. When you restart the program:
+- If a previous session exists, you'll be asked if you want to continue from where you left off
+- Choose **Yes** to resume with your previous settings
+- Choose **No** to start fresh (clears the saved session)
+
 ## Usage
 
 1. **Select your role:**
@@ -72,7 +79,9 @@ python main.py
 
 ### Commands During Chat
 
-- **`NEW`** - Start a new chat session (clears current conversation)
+- **`NEW`** - Start a new chat session
+  - Clears current conversation
+  - Clears saved session data
 - **`SAVE`** - Save the current chat to a markdown file
   - Prompts for a filename
   - Saves to your configured save folder
@@ -89,6 +98,7 @@ python main.py
   - Task file details (name, path, type, size)
   - Save folder location
   - Number of messages in current chat
+- **`HELP`** - Show all available commands
 - **`EXIT`** - Quit the program
 
 ### Saved Chat Files
@@ -101,18 +111,30 @@ Chat exports are saved as markdown files (.md) that can be:
 
 Files are saved with a timestamp to prevent overwriting and are tracked in `data_exports.json` for easy retrieval.
 
-## Features (Current - Chunk 2)
+## Features (Current - Chunk 3)
 
-✅ Role-based chat interface (Product Manager or Developer)  
-✅ Integration with Groq LLM (using Llama 3.1)  
-✅ File upload support (PDF, TXT, DOC/DOCX) for task descriptions  
-✅ Command system: NEW, SAVE, HISTORY, OPEN, LIST, EXIT  
-✅ Save chats as markdown files for Jira  
-✅ Chat history tracking with metadata  
-✅ Resume previous conversations  
-✅ Configurable save folder with auto-creation  
-✅ Conversation history maintained throughout session  
-✅ Error handling for missing environment configuration  
+✅ **Session Management:**
+  - Automatic session persistence between runs
+  - Resume from last session on startup
+  - Session data stored in `saved_session.json`
+  - Clear session with NEW command
+
+✅ **Enhanced Chat Interface:**
+  - HELP command to view all available commands
+  - Role-based chat (Product Manager or Developer)
+  - Integration with Groq LLM (using Llama 3.1)
+
+✅ **File & Resource Management:**
+  - File upload support (PDF, TXT, DOC/DOCX) for task descriptions
+  - Save chats as markdown files for Jira
+  - Chat history tracking with metadata (`data_exports.json`)
+  - Resume previous conversations with OPEN
+  - Configurable save folder with auto-creation
+
+✅ **Core Commands:**
+  - NEW, SAVE, HISTORY, OPEN, LIST, HELP, EXIT
+  - Conversation history maintained throughout session
+  - Error handling for missing environment configuration  
 
 ## Project Structure
 
@@ -123,6 +145,8 @@ Files are saved with a timestamp to prevent overwriting and are tracked in `data
 ├── .env.example        # Environment variable template
 ├── .env                # Your API keys (not committed to git)
 ├── data_exports.json   # Chat history metadata
+├── saved_session.json  # Session persistence (auto-created)
+├── test_chunk3.py      # Test script for session management
 ├── README.md           # This file
 ├── project_plan.md     # Detailed project planning
 └── LICENSE

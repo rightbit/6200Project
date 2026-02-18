@@ -128,6 +128,85 @@ def save_exports_data(data):
         print(f"❌ Error saving exports data: {e}")
 
 
+def load_session_data():
+    """Load the saved_session.json file."""
+    session_file = Path('saved_session.json')
+    
+    if not session_file.exists():
+        return {}
+    
+    try:
+        with open(session_file, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"⚠️  Warning: Could not load session data: {e}")
+        return {}
+
+
+def save_session_data(data):
+    """Save data to saved_session.json file."""
+    session_file = Path('saved_session.json')
+    try:
+        with open(session_file, 'w') as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"❌ Error saving session data: {e}")
+
+
+def clear_session_data():
+    """Clear the saved_session.json file."""
+    session_file = Path('saved_session.json')
+    try:
+        with open(session_file, 'w') as f:
+            json.dump({}, f, indent=2)
+    except Exception as e:
+        print(f"❌ Error clearing session data: {e}")
+
+
+def check_saved_session():
+    """Check if there's a saved session and ask if user wants to continue."""
+    session_data = load_session_data()
+    
+    if not session_data or not session_data.get('role'):
+        return None
+    
+    print("\n" + "="*60)
+    print("          SAVED SESSION FOUND")
+    print("="*60)
+    print("\nYou have a saved session from your last use:")
+    print(f"  Role: {session_data.get('role', 'N/A').replace('_', ' ').title()}")
+    print(f"  Repository: {session_data.get('repository', 'N/A')}")
+    
+    if session_data.get('file_info'):
+        print(f"  Task File: {session_data['file_info'].get('name', 'N/A')}")
+    
+    saved_date = session_data.get('timestamp')
+    if saved_date:
+        try:
+            date_obj = datetime.fromisoformat(saved_date)
+            print(f"  Last saved: {date_obj.strftime('%Y-%m-%d %H:%M:%S')}")
+        except:
+            pass
+    
+    print("\n" + "-"*60)
+    
+    while True:
+        choice = input("\nWould you like to continue from this session? (y/n): ").strip().lower()
+        
+        if choice.upper() == 'EXIT':
+            print("\nGoodbye!")
+            sys.exit(0)
+        
+        if choice == 'y':
+            return session_data
+        elif choice == 'n':
+            print("\n✓ Starting fresh session...")
+            clear_session_data()
+            return None
+        else:
+            print("❌ Please enter 'y' or 'n'.")
+
+
 def save_chat_to_file(messages, save_folder, role, repo_url, file_info=None):
     """Save chat conversation to a markdown file."""
     print("\n" + "-"*60)
@@ -486,19 +565,28 @@ Your goals:
 Be technical, specific, and focus on code implementation details."""
 
 
+def show_help():
+    """Display help information with available commands."""
+    print("\n" + "="*60)
+    print("          AVAILABLE COMMANDS")
+    print("="*60)
+    print("\n  NEW     - Start a new chat session")
+    print("  SAVE    - Save current chat to markdown file")
+    print("  HISTORY - View saved chat history")
+    print("  OPEN    - Open and continue a saved chat")
+    print("  LIST    - View loaded resources")
+    print("  HELP    - Show this help message")
+    print("  EXIT    - Quit the program")
+    print("\n" + "="*60)
+
+
 def chat_loop(client, role, repo_url, task_content=None, file_info=None, save_folder=None):
     """Main chat loop with the LLM."""
     print("\n" + "="*60)
     print(f"          CHAT SESSION - {role.replace('_', ' ').upper()}")
     print("="*60)
     print("\nYou can now chat with the assistant.")
-    print("\nAvailable commands:")
-    print("  NEW     - Start a new chat session")
-    print("  SAVE    - Save current chat to markdown file")
-    print("  HISTORY - View saved chat history")
-    print("  OPEN    - Open and continue a saved chat")
-    print("  LIST    - View loaded resources")
-    print("  EXIT    - Quit the program\n")
+    print("\nType 'HELP' to see available commands.\n")
     
     # Initialize conversation history
     system_prompt = get_system_prompt(role, repo_url, task_content)
@@ -520,6 +608,7 @@ def chat_loop(client, role, repo_url, task_content=None, file_info=None, save_fo
             print("Starting new chat session...")
             print("-"*60)
             messages = [{"role": "system", "content": system_prompt}]
+            clear_session_data()
             print("✓ New chat session started.")
             continue
         
@@ -571,6 +660,11 @@ def chat_loop(client, role, repo_url, task_content=None, file_info=None, save_fo
             print("-"*60)
             continue
         
+        # Handle HELP command
+        if user_input.upper() == 'HELP':
+            show_help()
+            continue
+        
         if not user_input:
             continue
         
@@ -611,14 +705,43 @@ def main():
         # Initialize Groq client
         client = Groq(api_key=api_key)
         
-        # Get user role
-        role = get_user_role()
+        # Check for saved session
+        saved_session = check_saved_session()
         
-        # Get task description file (optional)
-        task_content, file_info = get_task_file()
-        
-        # Get GitHub repository
-        repo_url = get_github_repo()
+        if saved_session:
+            # Resume from saved session
+            role = saved_session.get('role')
+            repo_url = saved_session.get('repository')
+            file_info = saved_session.get('file_info')
+            
+            # Load task content if file exists
+            task_content = None
+            if file_info and file_info.get('path'):
+                content, error = read_file_content(file_info['path'])
+                if not error:
+                    task_content = content
+                    print(f"✓ Task file reloaded: {file_info['name']}")
+                else:
+                    print(f"⚠️  Could not reload task file: {error}")
+                    file_info = None
+        else:
+            # Get user role
+            role = get_user_role()
+            
+            # Get task description file (optional)
+            task_content, file_info = get_task_file()
+            
+            # Get GitHub repository
+            repo_url = get_github_repo()
+            
+            # Save initial session data
+            session_data = {
+                'role': role,
+                'repository': repo_url,
+                'file_info': file_info,
+                'timestamp': datetime.now().isoformat()
+            }
+            save_session_data(session_data)
         
         # Start chat loop
         chat_loop(client, role, repo_url, task_content, file_info, save_folder)
