@@ -120,3 +120,22 @@ Save session history of last setup
 ## Files to create
 - saved_session.json 
 
+---
+# Chunk 4: Minimal Flask implementaion
+
+## Goals
+Integrate Flask and have it respond to a web request
+
+## Tasks
+1. Install Flask for python
+2. Create web_app.py and have it include Flask. 
+3. Define the home route "/" 
+4. Create a boilerplate head and body sections for future pages. 
+5. When the user browses to the home / route Print Hello Web! in an h1 header. 
+    1. The route's view funtcion must include the necessary code (within an if __name__ == "__main__" block)
+6. Add instructions to the readme.md on how to launch the flask webservice locally and browse to it with localhost
+
+
+## Files to create
+- web_app.py
+

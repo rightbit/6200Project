@@ -43,10 +43,34 @@ python3 -m pip install -r requirements.txt
 
 ## Running the Program
 
+### Command Line Interface (CLI)
+
 Run the main application:
 ```bash
 python main.py
 ```
+
+### Web Interface
+
+Run the Flask web application:
+```bash
+python web_app.py
+```
+
+Then open your web browser and navigate to:
+```
+http://localhost:8080
+```
+
+or
+
+```
+http://127.0.0.1:8080
+```
+
+**Note:** Port 8080 is used instead of 5000 to avoid conflicts with macOS AirPlay Receiver.
+
+To stop the web server, press `Ctrl+C` in the terminal.
 
 ### Session Persistence
 
@@ -111,7 +135,13 @@ Chat exports are saved as markdown files (.md) that can be:
 
 Files are saved with a timestamp to prevent overwriting and are tracked in `data_exports.json` for easy retrieval.
 
-## Features (Current - Chunk 3)
+## Features (Current - Chunk 4)
+
+✅ **Web Interface:**
+  - Basic Flask web application
+  - Home route with "Hello Web!" message
+  - HTML/CSS boilerplate for future pages
+  - Local development server support
 
 ✅ **Session Management:**
   - Automatic session persistence between runs
@@ -140,7 +170,8 @@ Files are saved with a timestamp to prevent overwriting and are tracked in `data
 
 ```
 6200Project/
-├── main.py              # Main application
+├── main.py              # Main CLI application
+├── web_app.py           # Web interface (Flask)
 ├── requirements.txt     # Python dependencies
 ├── .env.example        # Environment variable template
 ├── .env                # Your API keys (not committed to git)
