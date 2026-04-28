@@ -311,3 +311,318 @@ created_at (DateTime) — database record creation timestamp
 - `README.md` (update with database setup instructions)
 
 ---
+# Chunk 8: Edit, Soft Delete, and AI Chat Continuation
+
+## Goals
+
+Allow users to update and soft delete saved export records from the web
+interface. Extend the history detail page so users can continue a chat
+with the AI and update the associated markdown file.
+
+## Requirements
+
+1.  Update `items.html` to include action links or buttons for each
+    record:
+    -   View
+    -   Update
+    -   Delete
+2.  Add soft delete support to the database.
+3.  Deleting a record should not remove it from the database.
+4.  Deleted records should be hidden from normal item and history views.
+5.  Clicking Delete must ask the user for confirmation before
+    submitting.
+6.  Clicking Update should load the existing history detail page for
+    that export.
+7.  The history detail page should include:
+    -   the current markdown preview
+    -   a chat-style text input
+    -   a submit button to continue the conversation
+8.  When the user submits new chat text:
+    -   send the new text and current markdown content to the AI
+        connection in `main.py`
+    -   ask the AI to update the existing markdown content
+    -   save the updated markdown back to the associated `.md` file
+    -   reload the page and display the updated text in the preview
+
+## Database Changes
+
+Update the `Export` model to include soft delete fields:
+
+``` python
+deleted_at = db.Column(db.DateTime, nullable=True)
+is_deleted = db.Column(db.Boolean, default=False)
+```
+
+Normal queries should filter out deleted records:
+
+``` python
+Export.query.filter_by(is_deleted=False).all()
+```
+
+## Deliverables
+
+-   Updated `web_app.py` with:
+    -   soft delete fields on the `Export` model
+    -   filtered `/items` and `/history` routes
+    -   delete route that marks records as deleted
+    -   update route that loads the history detail page
+    -   POST route for continuing the AI chat
+-   Updated `templates/items.html` with:
+    -   View link
+    -   Update link
+    -   Delete form or button
+    -   JavaScript confirmation before delete
+-   Updated `templates/history_detail.html` with:
+    -   markdown preview area
+    -   chat continuation form
+    -   status message area after update
+-   Updated database migration/setup logic for the new soft delete
+    columns
+-   Updated README instructions for editing and deleting saved exports
+
+## Tasks
+
+1.  Add `is_deleted` and `deleted_at` fields to the `Export` model.
+2.  Update database initialization or migration logic to add the new
+    fields.
+3.  Modify `/items` so it only displays records where `is_deleted` is
+    false.
+4.  Modify `/history` so it only displays non-deleted records with valid
+    `file_path` values.
+5.  Update `templates/items.html` to display action links for each
+    export record.
+6.  Add a Delete button for each record.
+7.  Add a JavaScript `confirm()` prompt before submitting the delete
+    request.
+8.  Create a POST route such as `/items/delete/<int:export_id>`.
+9.  In the delete route:
+    -   load the export by ID
+    -   set `is_deleted` to true
+    -   set `deleted_at` to the current timestamp
+    -   save the record
+    -   redirect back to `/items`
+10. Add an Update link that routes to the existing history detail page,
+    such as `/history/view/<int:export_id>`.
+11. Update `history_detail.html` to include a chat input form below the
+    markdown preview.
+12. Create a POST route such as `/history/update/<int:export_id>`.
+13. In the update route:
+
+-   load the export by ID
+-   read the associated markdown file
+-   collect the user's new chat message from `request.form`
+-   call the AI helper function in `main.py`
+-   pass the current markdown and new user message to the AI
+-   save the AI-updated markdown back to the same file path
+-   redirect back to the detail page
+
+14. Add error handling for:
+
+-   missing export records
+-   deleted records
+-   missing markdown files
+-   empty chat input
+-   AI connection failures
+
+15. Update the README with instructions for using Update and Delete.
+
+## Files to create or modify
+
+-   `web_app.py`
+-   `main.py`
+-   `templates/items.html`
+-   `templates/history.html`
+-   `templates/history_detail.html`
+-   `README.md`
+-   Optional: database migration script for adding soft delete columns
+
+
+---
+# Chunk 9: User Accounts, Authentication, and Data Ownership
+
+## Goals
+
+Add user accounts to the application so each saved export belongs to a
+specific logged-in user. Protect all application routes behind login,
+store passwords securely with salted hashes, and make sure users can
+only view, update, or delete their own export records.
+
+## Requirements
+
+1.  Create a new `User` model in the database.
+2.  The `User` model must include:
+    -   `id`
+    -   `username`
+    -   `password_hash`
+    -   `salt`
+    -   `created_at`
+3.  Passwords must never be stored as plain text.
+4.  Passwords should be hashed using SHA with a unique salt per user.
+5.  Modify the `Export` model to include a foreign key relationship to
+    `User`.
+6.  Each export record must belong to one user.
+7.  Add registration functionality.
+8.  Add login functionality using Flask sessions.
+9.  Add logout functionality that clears the session.
+10. All routes except login and registration must require a logged-in
+    user.
+11. Users must only be able to view, update, delete, or continue chats
+    for exports they created.
+12. Add encryption or security handling for user-owned data where
+    appropriate.
+13. Create a migration that inserts two demo users:
+
+-   username: `demo-pm`
+-   password: `demo`
+-   username: `demo-dev`
+-   password: `demo`
+
+14. Create a migration that assigns all existing export records to the
+    `demo-pm` user.
+
+## Database Changes
+
+Create a new `User` model:
+
+``` python
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
+    salt = db.Column(db.String(64), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+```
+
+Update the `Export` model:
+
+``` python
+user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+user = db.relationship("User", backref="exports")
+```
+
+## Deliverables
+
+-   Updated `web_app.py` with:
+    -   `User` model
+    -   updated `Export` model
+    -   password hashing helper functions
+    -   registration route
+    -   login route
+    -   logout route
+    -   login-required route protection
+    -   user ownership filtering on all export queries
+-   New or updated templates:
+    -   `templates/register.html`
+    -   `templates/login.html`
+    -   updated navigation with logout link
+-   Database migration script with:
+    -   new `users` table
+    -   new `user_id` field on `exports`
+    -   demo users
+    -   assignment of existing exports to `demo-pm`
+-   Updated README instructions for:
+    -   registering
+    -   logging in
+    -   using demo accounts
+    -   understanding route protection
+
+## Tasks
+
+1.  Add a `User` model to the database.
+2.  Add a `user_id` foreign key field to the `Export` model.
+3.  Add password helper functions to:
+    -   generate a salt
+    -   hash a password with SHA and salt
+    -   verify a submitted password against the stored hash
+4.  Create a `/register` route.
+5.  Create a `register.html` template with:
+    -   username field
+    -   password field
+    -   confirm password field
+    -   submit button
+6.  In the registration route:
+    -   validate that the username is unique
+    -   validate that passwords match
+    -   generate a salt
+    -   hash the password
+    -   save the new user
+    -   redirect to login
+7.  Create a `/login` route.
+8.  Create a `login.html` template with:
+    -   username field
+    -   password field
+    -   submit button
+9.  In the login route:
+    -   find the user by username
+    -   hash the submitted password using the stored salt
+    -   compare the result to `password_hash`
+    -   store `user_id` in the Flask session
+    -   redirect to `/items`
+10. Create a `/logout` route that clears the session and redirects to
+    `/login`.
+11. Add a `login_required` decorator.
+12. Apply `login_required` to all routes except:
+
+-   `/login`
+-   `/register`
+-   static files
+
+13. Update `/items` so it only queries exports where:
+
+-   `Export.user_id == session["user_id"]`
+-   `Export.is_deleted == False`
+
+14. Update `/history` so it only shows the logged-in user's non-deleted
+    exports with valid files.
+15. Update detail, update, and delete routes so users can only access
+    records they own.
+16. When creating a new export, automatically set `user_id` to the
+    current logged-in user.
+17. Add a migration to create the demo users:
+
+-   `demo-pm / demo`
+-   `demo-dev / demo`
+
+18. Add a migration to assign all existing exports to the `demo-pm`
+    user.
+19. Add error handling for:
+
+-   duplicate usernames
+-   invalid login credentials
+-   missing session
+-   unauthorized export access
+-   missing user records
+
+20. Update the README with authentication and demo login instructions.
+
+## Files to create or modify
+
+-   `web_app.py`
+-   `templates/register.html`
+-   `templates/login.html`
+-   `templates/items.html`
+-   `templates/history.html`
+-   `templates/history_detail.html`
+-   `README.md`
+-   Optional: `migrate_users.py`
+
+## Security Notes
+
+-   Do not store plain-text passwords.
+-   Use a unique salt for each user.
+-   Use Flask sessions to track logged-in users.
+-   Set a strong Flask `SECRET_KEY`.
+-   Filter every export query by the current user.
+-   Never trust an export ID from the URL without checking ownership.
+-   For stronger production security, use a password-specific hashing
+    tool such as Werkzeug or bcrypt instead of plain SHA.
+
+---
+# Chunk 9.5:
+
+## Tasks
+1. Create a page to start a new chat
+2. Ask user to link to a github repo to use as a corpus of data  
+3. Allow user to paste project description into the chat. 
+4. Use the AI connection in main.py to create an MD formatted file outlining the project 
+4. Create a new entry in the database and redirect the user to the history/view page where they can copy the info or update it. 

@@ -580,6 +580,75 @@ def show_help():
     print("\n" + "="*60)
 
 
+def get_groq_client():
+    """Initialize and return a Groq client."""
+    load_dotenv()
+    api_key = os.getenv('GROQ_API_KEY')
+    if not api_key:
+        raise ValueError("GROQ_API_KEY not found in environment variables")
+    return Groq(api_key=api_key)
+
+
+def update_markdown_with_ai(client, current_content, user_message, role, repo_url):
+    """
+    Use AI to update markdown content based on user message.
+    
+    Args:
+        client: Groq API client
+        current_content: Current markdown content
+        user_message: User's message to update the content
+        role: User role (Product Manager or Developer)
+        repo_url: Repository URL for context
+    
+    Returns:
+        Updated markdown content
+    """
+    # Build system prompt for continuation
+    system_prompt = f"""You are an AI assistant helping update Jira task descriptions.
+
+The codebase is at: {repo_url}
+User role: {role}
+
+Your task:
+1. Review the existing markdown content provided
+2. Consider the user's new message
+3. Update and improve the markdown content based on the message
+4. Maintain the existing format and structure
+5. Return ONLY the updated markdown content (no explanations or extra text)
+
+Be thorough, professional, and focus on clarity and completeness."""
+    
+    # Build messages for the conversation
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {
+            "role": "user",
+            "content": f"""Please update this markdown content based on my feedback:
+
+---CURRENT CONTENT---
+{current_content}
+
+---USER MESSAGE---
+{user_message}
+
+Please return the updated markdown content."""
+        }
+    ]
+    
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=messages,
+            temperature=0.7,
+            max_tokens=2048,
+        )
+        
+        updated_content = response.choices[0].message.content
+        return updated_content
+    except Exception as e:
+        raise Exception(f"AI service error: {e}")
+
+
 def chat_loop(client, role, repo_url, task_content=None, file_info=None, save_folder=None):
     """Main chat loop with the LLM."""
     print("\n" + "="*60)

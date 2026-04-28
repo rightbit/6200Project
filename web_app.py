@@ -6,6 +6,8 @@ A web interface for the Better Jira Generator chatbot.
 
 import json
 import os
+import hashlib
+import secrets
 from datetime import datetime
 from pathlib import Path
 from flask import (
@@ -16,8 +18,10 @@ from flask import (
     url_for,
     flash,
     get_flashed_messages,
+    session,
 )
 from flask_sqlalchemy import SQLAlchemy
+from functools import wraps
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'change-this-for-local-testing')
@@ -28,6 +32,23 @@ db = SQLAlchemy(app)
 
 DATA_EXPORTS_PATH = Path('data_exports.json')
 SAVED_SESSION_PATH = Path('saved_session.json')
+
+
+class User(db.Model):
+    __tablename__ = 'users'
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
+    salt = db.Column(db.String(64), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
 
 
 class Export(db.Model):
@@ -42,6 +63,49 @@ class Export(db.Model):
     file_path = db.Column(db.String(1024))
     action = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    is_deleted = db.Column(db.Boolean, default=False, nullable=False)
+    deleted_at = db.Column(db.DateTime, nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user = db.relationship('User', backref='exports')
+
+
+def generate_salt():
+    """Generate a random salt for password hashing."""
+    return secrets.token_hex(32)
+
+
+def hash_password(password, salt):
+    """Hash a password with SHA-256 and salt."""
+    return hashlib.sha256((password + salt).encode()).hexdigest()
+
+
+def verify_password(password, salt, stored_hash):
+    """Verify a password against stored hash."""
+    return hash_password(password, salt) == stored_hash
+
+
+def login_required(f):
+    """Decorator to require login for routes."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Please log in to access this page.', 'error')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+    __tablename__ = 'exports'
+
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(255), nullable=False)
+    original_name = db.Column(db.String(255))
+    date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    user_type = db.Column(db.String(100))
+    repository = db.Column(db.String(500))
+    file_path = db.Column(db.String(1024))
+    action = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    is_deleted = db.Column(db.Boolean, default=False, nullable=False)
+    deleted_at = db.Column(db.DateTime, nullable=True)
 
     def to_dict(self):
         return {
@@ -63,36 +127,78 @@ def init_db():
 
 
 def migrate_json_to_db():
-    """Migrate existing data_exports.json to database."""
-    if not DATA_EXPORTS_PATH.exists():
-        return
-
-    try:
-        with open(DATA_EXPORTS_PATH, 'r') as f:
-            data = json.load(f)
-    except Exception:
-        return
-
-    exports = data.get('exports', [])
-
+    """Migrate existing data_exports.json to database and create demo users."""
     with app.app_context():
-        for item in exports:
-            existing = Export.query.filter_by(filename=item.get('filename')).first()
-            if existing:
-                continue
+        try:
+            # Create demo users if they don't exist
+            demo_pm = User.query.filter_by(username='demo-pm').first()
+            if not demo_pm:
+                salt = generate_salt()
+                password_hash = hash_password('demo', salt)
+                demo_pm = User(
+                    username='demo-pm',
+                    password_hash=password_hash,
+                    salt=salt
+                )
+                db.session.add(demo_pm)
 
-            export_record = Export(
-                filename=item.get('filename', ''),
-                original_name=item.get('original_name'),
-                date=datetime.fromisoformat(item['date']) if item.get('date') else datetime.utcnow(),
-                user_type=item.get('user_type'),
-                repository=item.get('repository'),
-                file_path=item.get('file_path'),
-                action=item.get('action'),
-            )
-            db.session.add(export_record)
+            demo_dev = User.query.filter_by(username='demo-dev').first()
+            if not demo_dev:
+                salt = generate_salt()
+                password_hash = hash_password('demo', salt)
+                demo_dev = User(
+                    username='demo-dev',
+                    password_hash=password_hash,
+                    salt=salt
+                )
+                db.session.add(demo_dev)
 
-        db.session.commit()
+            db.session.commit()
+
+            # Get the demo-pm user ID for assigning existing exports
+            demo_pm = User.query.filter_by(username='demo-pm').first()
+            if not demo_pm:
+                return
+
+            # Migrate existing exports if data_exports.json exists
+            if DATA_EXPORTS_PATH.exists():
+                try:
+                    with open(DATA_EXPORTS_PATH, 'r') as f:
+                        data = json.load(f)
+                except Exception:
+                    return
+
+                exports = data.get('exports', [])
+
+                for item in exports:
+                    # Use a try-except for each item to handle potential schema issues
+                    try:
+                        existing = Export.query.filter_by(filename=item.get('filename')).first()
+                        if existing:
+                            continue
+
+                        export_record = Export(
+                            filename=item.get('filename', ''),
+                            original_name=item.get('original_name'),
+                            date=datetime.fromisoformat(item['date']) if item.get('date') else datetime.utcnow(),
+                            user_type=item.get('user_type'),
+                            repository=item.get('repository'),
+                            file_path=item.get('file_path'),
+                            action=item.get('action'),
+                            is_deleted=False,
+                            deleted_at=None,
+                            user_id=demo_pm.id,  # Assign to demo-pm user
+                        )
+                        db.session.add(export_record)
+                    except Exception as e:
+                        # Skip items that cause errors
+                        continue
+
+                db.session.commit()
+        except Exception:
+            # If migration fails, just skip it - the tables will still be created
+            db.session.rollback()
+            return
 
 
 def load_json_file(path, default):
@@ -131,9 +237,13 @@ def get_saved_sessions(session_data):
 
 
 def get_history_entries():
-    """Fetch valid history entries from database where file_path exists."""
+    """Fetch valid history entries from database where file_path exists and not deleted, for current user."""
     with app.app_context():
-        exports = Export.query.all()
+        user_id = session.get('user_id')
+        if not user_id:
+            return []
+
+        exports = Export.query.filter_by(user_id=user_id, is_deleted=False).all()
         valid_entries = []
         for export in exports:
             file_path = export.file_path or ''
@@ -150,16 +260,99 @@ def get_history_entries():
         return valid_entries
 
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    """User registration route."""
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+
+        # Validation
+        if not username or not password:
+            flash('Username and password are required.', 'error')
+            return redirect(url_for('register'))
+
+        if password != confirm_password:
+            flash('Passwords do not match.', 'error')
+            return redirect(url_for('register'))
+
+        if len(password) < 6:
+            flash('Password must be at least 6 characters long.', 'error')
+            return redirect(url_for('register'))
+
+        # Check if username already exists
+        with app.app_context():
+            existing_user = User.query.filter_by(username=username).first()
+            if existing_user:
+                flash('Username already exists. Please choose a different one.', 'error')
+                return redirect(url_for('register'))
+
+            # Create new user
+            salt = generate_salt()
+            password_hash = hash_password(password, salt)
+
+            new_user = User(
+                username=username,
+                password_hash=password_hash,
+                salt=salt
+            )
+
+            db.session.add(new_user)
+            db.session.commit()
+
+            flash('Registration successful! Please log in.', 'success')
+            return redirect(url_for('login'))
+
+    return render_template('register.html')
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """User login route."""
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+
+        if not username or not password:
+            flash('Username and password are required.', 'error')
+            return redirect(url_for('login'))
+
+        # Find user and verify password
+        with app.app_context():
+            user = User.query.filter_by(username=username).first()
+            if user and verify_password(password, user.salt, user.password_hash):
+                session['user_id'] = user.id
+                session['username'] = user.username
+                flash(f'Welcome back, {user.username}!', 'success')
+                return redirect(url_for('items'))
+            else:
+                flash('Invalid username or password.', 'error')
+                return redirect(url_for('login'))
+
+    return render_template('login.html')
+
+
+@app.route('/logout')
+def logout():
+    """User logout route."""
+    session.clear()
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('login'))
+
+
 @app.route('/')
 @app.route('/items')
+@login_required
 def items():
     with app.app_context():
-        exports = Export.query.all()
+        exports = Export.query.filter_by(user_id=session['user_id'], is_deleted=False).all()
         history_count = len(get_history_entries())
         return render_template('items.html', exports=exports, history_count=history_count)
 
 
 @app.route('/saved_sessions', methods=['GET'])
+@login_required
 def saved_sessions():
     session_data = load_session_data()
     sessions = get_saved_sessions(session_data)
@@ -168,6 +361,7 @@ def saved_sessions():
 
 
 @app.route('/saved_sessions', methods=['POST'])
+@login_required
 def choose_saved_session():
     session_data = load_session_data()
     sessions = get_saved_sessions(session_data)
@@ -209,6 +403,7 @@ def choose_saved_session():
         repository=selected.get('repository', ''),
         file_path=selected.get('file_info', {}).get('file_path', '') if isinstance(selected.get('file_info'), dict) else '',
         action=action,
+        user_id=session['user_id'],
     )
 
     with app.app_context():
@@ -220,6 +415,7 @@ def choose_saved_session():
 
 
 @app.route('/chat', methods=['GET'])
+@login_required
 def chat():
     session_data = load_session_data()
     if not session_data or (not session_data.get('role') and session_data.get('type') != 'new_chat'):
@@ -232,6 +428,7 @@ def chat():
 
 
 @app.route('/history', methods=['GET'])
+@login_required
 def history():
     entries = get_history_entries()
     messages = get_flashed_messages(with_categories=True)
@@ -239,6 +436,7 @@ def history():
 
 
 @app.route('/history', methods=['POST'])
+@login_required
 def choose_history_entry():
     entries = get_history_entries()
     choice = request.form.get('selection')
@@ -258,10 +456,11 @@ def choose_history_entry():
 
 
 @app.route('/history/view/<int:entry_id>', methods=['GET'])
+@login_required
 def history_detail(entry_id):
     with app.app_context():
         export = Export.query.get(entry_id)
-        if not export:
+        if not export or export.is_deleted or export.user_id != session['user_id']:
             flash('History item not found.', 'error')
             return redirect(url_for('history'))
 
@@ -278,6 +477,85 @@ def history_detail(entry_id):
             return redirect(url_for('history'))
 
         return render_template('history_detail.html', entry=export, contents=contents)
+
+
+@app.route('/items/delete/<int:export_id>', methods=['POST'])
+@login_required
+def delete_export(export_id):
+    """Soft delete an export record."""
+    with app.app_context():
+        export = Export.query.get(export_id)
+        if not export or export.user_id != session['user_id']:
+            flash('Export item not found.', 'error')
+            return redirect(url_for('items'))
+
+        if export.is_deleted:
+            flash('This item has already been deleted.', 'warning')
+            return redirect(url_for('items'))
+
+        # Mark as deleted
+        export.is_deleted = True
+        export.deleted_at = datetime.utcnow()
+        db.session.commit()
+
+        flash(f'Successfully deleted: {export.filename}', 'success')
+        return redirect(url_for('items'))
+
+
+@app.route('/history/update/<int:export_id>', methods=['POST'])
+@login_required
+def update_export(export_id):
+    """Continue chat and update the export file with AI-generated content."""
+    with app.app_context():
+        export = Export.query.get(export_id)
+        if not export or export.is_deleted or export.user_id != session['user_id']:
+            flash('Export item not found.', 'error')
+            return redirect(url_for('history'))
+
+        file_path = export.file_path or ''
+        if not file_path or not Path(file_path).exists():
+            flash('The associated file is missing or unavailable.', 'error')
+            return redirect(url_for('history'))
+
+        # Get user message from form
+        user_message = request.form.get('chat_message', '').strip()
+        if not user_message:
+            flash('Please enter a message.', 'warning')
+            return redirect(url_for('history_detail', entry_id=export_id))
+
+        # Read current file content
+        try:
+            with open(file_path, 'r') as f:
+                current_content = f.read()
+        except Exception as e:
+            flash(f'Could not read file: {e}', 'error')
+            return redirect(url_for('history_detail', entry_id=export_id))
+
+        # Call AI helper to update content
+        try:
+            from main import get_groq_client, update_markdown_with_ai
+            client = get_groq_client()
+            updated_content = update_markdown_with_ai(
+                client,
+                current_content,
+                user_message,
+                export.user_type or 'Developer',
+                export.repository or ''
+            )
+
+            # Save updated content back to file
+            with open(file_path, 'w') as f:
+                f.write(updated_content)
+
+            flash('Successfully updated the file with AI response!', 'success')
+            return redirect(url_for('history_detail', entry_id=export_id))
+
+        except ImportError:
+            flash('AI service not available. Please check your configuration.', 'error')
+            return redirect(url_for('history_detail', entry_id=export_id))
+        except Exception as e:
+            flash(f'Error updating file: {e}', 'error')
+            return redirect(url_for('history_detail', entry_id=export_id))
 
 
 if __name__ == '__main__':

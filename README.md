@@ -169,6 +169,24 @@ The application automatically saves your session (role, repository, task file) t
 - **`HELP`** - Show all available commands
 - **`EXIT`** - Quit the program
 
+### Web Interface - Managing Exports (Chunk 8)
+
+The web interface at `/items` displays all saved exports with action buttons:
+
+- **View:** Opens the export file and displays its contents
+- **Update:** Continues a conversation with AI to refine the markdown content
+- **Delete:** Marks the export as deleted (soft delete - data is preserved, not removed)
+
+When you click **Update**, you'll be taken to the history detail page where you can:
+1. Review the current markdown content
+2. Enter a message in the "Continue Chat" form
+3. Click "Send & Update File" to send your message to the AI
+4. The AI will refine the content based on your feedback
+5. The updated markdown is automatically saved to the file
+6. You'll be redirected back to see the updated content
+
+**Important:** Deleted exports are hidden from normal views but their data remains in the database. To permanently remove data, contact your system administrator.
+
 ### Saved Chat Files
 
 Chat exports are saved as markdown files (.md) that can be:
@@ -209,6 +227,16 @@ Files are saved with a timestamp to prevent overwriting and are tracked in `data
   - NEW, SAVE, HISTORY, OPEN, LIST, HELP, EXIT
   - Conversation history maintained throughout session
   - Error handling for missing environment configuration  
+
+✅ **Edit, Delete & AI Chat Continuation (Chunk 8):**
+  - **Soft Delete:** Delete export records without losing data (marked as deleted but preserved)
+  - **Update Exports:** Edit and enhance saved exports using AI chat continuation
+  - **Web Interface Actions:** View, Update, and Delete buttons for each export
+  - **Delete Confirmation:** JavaScript confirmation dialog prevents accidental deletions
+  - **AI-Powered Updates:** Continue conversations with AI to refine markdown content
+  - **File Persistence:** Updated content is saved directly to the associated markdown file
+  - **Soft Delete Filtering:** Deleted records are hidden from all list views and history
+  - **Database Integration:** Soft delete fields (`is_deleted`, `deleted_at`) added to Export model  
 
 ## Project Structure
 
