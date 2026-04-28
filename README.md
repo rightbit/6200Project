@@ -59,14 +59,16 @@ python web_app.py
 
 Then open your web browser and navigate to:
 ```
-http://localhost:8080
+http://localhost:8080/saved_sessions
 ```
 
 or
 
 ```
-http://127.0.0.1:8080
+http://127.0.0.1:8080/saved_sessions
 ```
+
+Use the form to load an existing saved session or start a new chat. After submitting, you will be redirected to `/chat` to continue.
 
 **Note:** Port 8080 is used instead of 5000 to avoid conflicts with macOS AirPlay Receiver.
 

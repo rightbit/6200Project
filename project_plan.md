@@ -139,3 +139,70 @@ Integrate Flask and have it respond to a web request
 ## Files to create
 - web_app.py
 
+
+---
+# Chunk 5: Saved Sessions and Chat Routing
+
+## Goals
+Build a Flask session selection flow that allows users to resume a saved session or start a new chat.
+
+## Requirements
+1. Create a Flask route `/saved_sessions` that renders an HTML form from a new `templates/` folder.
+2. The form must ask the user whether they want to:
+   - load a saved session, or
+   - start a new chat.
+3. If the user chooses a saved session, the form should display existing sessions from `saved_session.json` for selection.
+4. If the user chooses New Chat, the form should allow that option and clear the chat context.
+5. When the form is submitted, send the data with a POST request to a Flask route.
+6. The POST route must:
+   - read the user's choice from `request.form`
+   - if a saved session is selected, load that session from `saved_session.json`
+   - if New Chat is selected, initialize an empty session context
+   - save the selected or new session context back to `saved_session.json`
+   - redirect the user to a `/chat` route
+7. The `/chat` route must render a page that:
+   - displays the loaded session details when resuming a saved session
+   - shows blank chat fields when starting a new chat
+   - includes a confirmation message after redirect
+
+## Deliverables
+- Updated `web_app.py` with:
+  - a GET route for `/saved_sessions` rendering a selection form
+  - a POST route that processes the saved session or new chat choice
+  - a `/chat` route that renders the current session context
+  - JSON persistence logic for `data_exports.json` and `saved_session.json`
+- A new `templates/` folder containing at least:
+  - `saved_sessions.html`
+  - `chat.html`
+
+## Tasks
+1. Install any required Flask template dependencies.
+2. Create `templates/saved_sessions.html` with:
+   - a form for choosing between saved session or new chat
+   - a list of saved sessions loaded from `saved_session.json`
+   - a submit button to continue to `/chat`
+3. Create `templates/chat.html` with:
+   - displayed session information when resuming a saved session
+   - blank form fields for starting a new chat
+   - a success/status message area
+4. Add a GET route in `web_app.py` for `/saved_sessions`.
+5. Add a POST route in `web_app.py` for `/saved_sessions` that:
+   - validates the user's selection
+   - loads or initializes session data
+   - updates `saved_session.json`
+   - redirects to `/chat`
+6. Add a GET route in `web_app.py` for `/chat` that renders the selected session or new chat view.
+7. Display feedback after redirecting to `/chat`.
+8. Update the README with instructions for launching `/saved_sessions` and continuing to `/chat`.
+
+## Files to create
+- `web_app.py`
+- `templates/saved_sessions.html`
+- `templates/chat.html`
+- `data_exports.json` (if not already present)
+- `saved_session.json` (if not already present)
+
+---
+# Chunk 6: ...
+
+##

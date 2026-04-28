@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Session</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background: #f4f6f8;
+            color: #20232a;
+        }
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            padding: 2rem;
+        }
+        .message {
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+        .success { background: #e6ffed; color: #1a6f3c; }
+        .error { background: #ffe6e6; color: #a93030; }
+        dl {
+            display: grid;
+            grid-template-columns: 130px 1fr;
+            gap: 0.75rem 1rem;
+            margin-bottom: 1.5rem;
+        }
+        dt {
+            font-weight: 700;
+        }
+        dd {
+            margin: 0;
+            color: #374151;
+        }
+        .blank {
+            color: #6b7280;
+            font-style: italic;
+        }
+        .link {
+            text-decoration: none;
+            color: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chat Session</h1>
+
+        {% for category, message in messages %}
+            <div class="message {{ category }}">{{ message }}</div>
+        {% endfor %}
+
+        {% if session_type == 'resume' %}
+            <p>Resuming a saved chat session.</p>
+        {% else %}
+            <p>Starting a new chat session.</p>
+        {% endif %}
+
+        <dl>
+            <dt>Role</dt>
+            <dd>{{ session.role or 'Not set' }}</dd>
+            <dt>Repository</dt>
+            <dd>{{ session.repository or 'Not set' }}</dd>
+            <dt>Timestamp</dt>
+            <dd>{{ session.timestamp or 'Not set' }}</dd>
+            <dt>File Info</dt>
+            <dd>
+                {% if session.file_info %}
+                    {{ session.file_info.filename }}<br>
+                    {{ session.file_info.file_path or '' }}
+                {% else %}
+                    <span class="blank">No file info loaded</span>
+                {% endif %}
+            </dd>
+        </dl>
+
+        <h2>Chat Controls</h2>
+        <p>Use this page as the starting point for your chat flow. The session data above was loaded from <strong>saved_session.json</strong>.</p>
+
+        <p><a class="link" href="{{ url_for('saved_sessions') }}">Back to saved session selection</a></p>
+    </div>
+</body>
+</html>
