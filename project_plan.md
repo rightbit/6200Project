@@ -245,3 +245,69 @@ Extend the Flask app so users can view all stored export records and inspect ind
 - `data_exports.json` (if not already present)
 
 ---
+# Chunk 7: Database Setup and Migration
+
+## Goals
+Migrate the application's data layer from JSON file storage to a SQLite database, while maintaining compatibility with Heroku hosting.
+
+## Requirements
+1. Choose SQLite as the recommended database for Heroku compatibility and ease of local development.
+   - SQLite requires no server setup and ships with most Python installations.
+   - Flask-SQLAlchemy simplifies ORM integration.
+2. Define a SQL model representing a single export item (analogous to the current `data_exports.json` structure).
+3. Configure Flask to connect to an SQLite database using Flask-SQLAlchemy.
+4. Create database initialization logic to set up tables on first run.
+5. Modify the `/items` and `/history` routes to query the database instead of reading `data_exports.json`.
+6. Update the templates (`items.html` and `history.html`) to work with SQLite query results.
+7. Provide a one-time migration script or function to transfer existing `data_exports.json` data into the database.
+
+## Database Model: Export
+
+Define an `Export` model with the following fields:
+
+```
+id (Integer, primary key)
+filename (String, required) — the saved export filename
+original_name (String) — original name before export
+date (DateTime, required) — export timestamp
+user_type (String) — role of the user (e.g., "Product Manager", "Developer")
+repository (String) — repository URL or identifier
+file_path (String) — local path to the saved file
+action (String) — action type (e.g., "new_chat", "resume_saved_session")
+created_at (DateTime) — database record creation timestamp
+```
+
+## Deliverables
+- Updated `web_app.py` with:
+  - Flask-SQLAlchemy initialization
+  - `Export` model definition
+  - Database setup logic
+  - Modified routes to query the database
+  - A migration function (or instructions) to import existing `data_exports.json` into the database
+- Updated or new configuration file for database URL
+- Updated `requirements.txt` to include Flask-SQLAlchemy
+- Updated `templates/items.html` and `templates/history.html` to display database query results
+- migration script or function to populate the database from JSON
+
+## Tasks
+1. Add Flask-SQLAlchemy to `requirements.txt`.
+2. Configure Flask-SQLAlchemy in `web_app.py` with a SQLite database file path.
+3. Define the `Export` model class using SQLAlchemy ORM decorators.
+4. Add database initialization code to create tables if they do not exist.
+5. Create a migration function that reads `data_exports.json` and inserts records into the `Export` table.
+6. Modify the `/items` route to query all `Export` records from the database.
+7. Modify the `/history` route to query only `Export` records with non-empty `file_path` values that exist on disk.
+8. Update the `/history/view/<int:entry_index>` route to fetch the entry by database ID instead of list index.
+9. Ensure the templates render database query results correctly (no JSON-specific logic).
+10. Update the README with instructions for running the database setup and migration.
+
+## Files to create or modify
+- `web_app.py` (update with Flask-SQLAlchemy, models, and routes)
+- `requirements.txt` (add Flask-SQLAlchemy)
+- `templates/items.html` (update to work with ORM results)
+- `templates/history.html` (update to work with ORM results)
+- `templates/history_detail.html` (update to work with database ID)
+- Optional: `migrate_json_to_db.py` (one-time migration script)
+- `README.md` (update with database setup instructions)
+
+---

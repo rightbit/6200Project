@@ -41,6 +41,22 @@ python3 -m pip install -r requirements.txt
      SAVE_FOLDER_PATH=~/Documents/JiraExports
      ```
 
+## Database Setup
+
+The application uses **SQLite** for data persistence (Chunk 7 and later).
+
+When you run `web_app.py` for the first time:
+1. A new SQLite database file (`app.db`) will be created automatically.
+2. All database tables will be initialized.
+3. If a `data_exports.json` file exists, its data will be automatically migrated to the database.
+
+If you need to manually migrate data from `data_exports.json`, run:
+```bash
+python migrate_json_to_db.py
+```
+
+The database stores all export records and is the primary data source for the web interface starting with Chunk 7.
+
 ## Running the Program
 
 ### Command Line Interface (CLI)
@@ -57,6 +73,8 @@ Run the Flask web application:
 python web_app.py
 ```
 
+The application will automatically initialize the database on startup.
+
 Then open your web browser and navigate to one of the following:
 ```
 http://localhost:8080/
@@ -68,7 +86,7 @@ or
 http://127.0.0.1:8080/
 ```
 
-The home page shows all saved export items from `data_exports.json`.
+The home page shows all saved export items from the database.
 
 For session selection, browse to:
 ```

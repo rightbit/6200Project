@@ -26,7 +26,7 @@
             <dt>Repository</dt>
             <dd>{{ entry.repository or 'N/A' }}</dd>
             <dt>Date</dt>
-            <dd>{{ entry.date or 'N/A' }}</dd>
+            <dd>{{ entry.date.isoformat() if entry.date else 'N/A' }}</dd>
             <dt>Path</dt>
             <dd>{{ entry.file_path }}</dd>
         </dl>

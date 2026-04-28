@@ -41,7 +41,7 @@
                             <td>{{ item.filename }}</td>
                             <td>{{ item.user_type or 'N/A' }}</td>
                             <td>{{ item.repository or 'N/A' }}</td>
-                            <td>{{ item.date or 'N/A' }}</td>
+                            <td>{{ item.date.isoformat() if item.date else 'N/A' }}</td>
                             <td>{{ 'Yes' if item.file_path else 'No' }}</td>
                         </tr>
                     {% endfor %}

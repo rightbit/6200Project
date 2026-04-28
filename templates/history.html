@@ -35,7 +35,7 @@
                     <legend>Select a saved export file</legend>
                     {% for entry in entries %}
                         <label>
-                            <input type="radio" name="selection" value="{{ entry.index }}" {% if loop.first %}checked{% endif %}>
+                            <input type="radio" name="selection" value="{{ entry.id }}" {% if loop.first %}checked{% endif %}>
                             {{ entry.filename }} — {{ entry.user_type or 'N/A' }} — {{ entry.repository or 'N/A' }}
                             <div style="margin-left: 1.75rem; color: #4b5563; font-size: 0.95rem;">
                                 {{ entry.date or 'Unknown date' }}
