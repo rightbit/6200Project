@@ -618,11 +618,59 @@ user = db.relationship("User", backref="exports")
     tool such as Werkzeug or bcrypt instead of plain SHA.
 
 ---
-# Chunk 9.5:
+# Chunk 9.5: New Chat with AI-Generated Project Outline
 
-## Tasks
-1. Create a page to start a new chat
-2. Ask user to link to a github repo to use as a corpus of data  
-3. Allow user to paste project description into the chat. 
-4. Use the AI connection in main.py to create an MD formatted file outlining the project 
-4. Create a new entry in the database and redirect the user to the history/view page where they can copy the info or update it. 
+## Goals
+Allow users to start a new chat by providing a GitHub repository URL and project description, then use AI to generate a comprehensive project outline.
+
+## Tasks - COMPLETED ✓
+1. ✓ Create a page to start a new chat (`/new_chat`)
+2. ✓ Ask user to link to a GitHub repo to use as a corpus of data
+3. ✓ Allow user to paste project description into the chat
+4. ✓ Use the AI connection in main.py to create an MD formatted file outlining the project
+5. ✓ Create a new entry in the database and redirect to the history/view page for editing and copying
+
+## Implementation Details
+
+### New Route: `/new_chat`
+- **GET**: Displays a form for creating a new chat
+- **POST**: Processes the form and calls AI to generate project outline
+- Protected by `@login_required` decorator
+
+### New Template: `new_chat.html`
+- User-friendly form with fields for:
+  - GitHub repository URL
+  - User type (Product Manager, Developer, QA Engineer)
+  - Project description (textarea for detailed input)
+- Clear instructions on how the process works
+- Consistent styling with other templates
+
+### Features
+- AI integration using Groq API
+- Automatic markdown file generation
+- Database entry creation with file path tracking
+- User ownership tracking
+- Soft delete support (is_deleted flag)
+- Redirect to history detail page for further editing
+- Export directory creation (auto-mkdir)
+
+### Database Changes
+- Uses existing `Export` model
+- Stores repository URL, user type, and action type for tracking
+
+### Integration Points
+- Links from `items.html` dashboard to new chat creation
+- Uses existing AI client from `main.py` (get_groq_client)
+- Integrates with history/detail view for subsequent editing
+- Maintains user authentication and data ownership
+
+## Files Created/Modified
+- `templates/new_chat.html` - NEW: Form for starting new chat
+- `web_app.py` - MODIFIED: Added `/new_chat` GET and POST routes
+- `templates/items.html` - MODIFIED: Added "Start New Chat" button
+
+## Testing Notes
+- Flask app starts successfully
+- Dependencies installed
+- Syntax validation passed
+- Routes are accessible and protected by login decorator 

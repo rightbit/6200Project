@@ -82,6 +82,7 @@
         {% endif %}
 
         <div class="actions">
+            <a class="button success" href="{{ url_for('new_chat') }}">Start New Chat</a>
             <a class="button" href="{{ url_for('history') }}">View history ({{ history_count }} available)</a>
             <a class="button secondary" href="{{ url_for('saved_sessions') }}">Saved session selection</a>
         </div>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Start New Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background: #f4f6f8;
+            color: #20232a;
+        }
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            padding: 2rem;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        h1 {
+            margin: 0;
+        }
+        .header-text {
+            color: #4b5563;
+            margin: 0.5rem 0 0 0;
+        }
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .button {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            text-decoration: none;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .button-primary {
+            background: #2563eb;
+        }
+        .button-secondary {
+            background: #6b7280;
+        }
+        .button-secondary:hover {
+            background: #4b5563;
+        }
+        .message {
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+        .success { background: #e6ffed; color: #1a6f3c; }
+        .error { background: #ffe6e6; color: #a93030; }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        input[type="text"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        input[type="text"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+        .button-submit {
+            background: #059669;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+        }
+        .button-submit:hover {
+            background: #047857;
+        }
+        .info-section {
+            background: #f0f9ff;
+            border-left: 4px solid #2563eb;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: 4px;
+        }
+        .info-section p {
+            margin: 0.5rem 0;
+            color: #1e3a8a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>Start New Chat</h1>
+                <p class="header-text">Create a new project outline with AI assistance</p>
+            </div>
+            <div class="button-group">
+                <a href="{{ url_for('items') }}" class="button button-secondary">Back to Items</a>
+                <a href="{{ url_for('logout') }}" class="button button-secondary">Logout</a>
+            </div>
+        </div>
+
+        {% for category, message in get_flashed_messages(with_categories=True) %}
+            <div class="message {{ category }}">{{ message }}</div>
+        {% endfor %}
+
+        <div class="info-section">
+            <p><strong>How this works:</strong></p>
+            <p>1. Provide a link to your GitHub repository</p>
+            <p>2. Describe your project in detail</p>
+            <p>3. AI will generate a comprehensive project outline</p>
+            <p>4. Review and edit the outline in the history view</p>
+        </div>
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="repo_url">GitHub Repository URL</label>
+                <input 
+                    type="text" 
+                    id="repo_url" 
+                    name="repo_url" 
+                    placeholder="https://github.com/username/repository"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="user_type">User Type</label>
+                <select id="user_type" name="user_type" required>
+                    <option value="Product Manager">Product Manager</option>
+                    <option value="Developer" selected>Developer</option>
+                    <option value="QA Engineer">QA Engineer</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="project_description">Project Description</label>
+                <textarea 
+                    id="project_description" 
+                    name="project_description" 
+                    placeholder="Describe your project, including goals, features, technical requirements, and any specific details..."
+                    required
+                ></textarea>
+            </div>
+
+            <button type="submit" class="button button-submit">Generate Project Outline</button>
+        </form>
+    </div>
+</body>
+</html>

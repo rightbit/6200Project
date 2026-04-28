@@ -558,6 +558,108 @@ def update_export(export_id):
             return redirect(url_for('history_detail', entry_id=export_id))
 
 
+@app.route('/new_chat', methods=['GET'])
+@login_required
+def new_chat():
+    """Display form to start a new chat."""
+    return render_template('new_chat.html', username=session.get('username'))
+
+
+@app.route('/new_chat', methods=['POST'])
+@login_required
+def create_new_chat():
+    """Create a new chat with GitHub repo and project description."""
+    with app.app_context():
+        repo_url = request.form.get('repo_url', '').strip()
+        project_description = request.form.get('project_description', '').strip()
+        user_type = request.form.get('user_type', 'Developer').strip()
+        
+        if not repo_url:
+            flash('Please provide a GitHub repository URL.', 'error')
+            return redirect(url_for('new_chat'))
+        
+        if not project_description:
+            flash('Please provide a project description.', 'error')
+            return redirect(url_for('new_chat'))
+        
+        try:
+            from main import get_groq_client
+            client = get_groq_client()
+            
+            system_prompt = f"""You are an AI assistant helping create Jira task descriptions.
+
+The codebase is at: {repo_url}
+User role: {user_type}
+
+Your task:
+1. Review the project description provided by the user
+2. Create a comprehensive, well-structured markdown document outlining the project
+3. Include sections for:
+   - Project Overview
+   - Goals and Objectives
+   - Key Features
+   - Technical Requirements
+   - Success Criteria
+4. Format the document professionally with proper markdown syntax
+5. Return ONLY the markdown content (no explanations or extra text)
+
+Be thorough, professional, and focus on clarity and completeness."""
+            
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": f"""Based on this project description, please create a comprehensive markdown document outlining the project:
+
+---PROJECT DESCRIPTION---
+{project_description}
+
+Please return the formatted markdown document."""
+                }
+            ]
+            
+            response = client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=messages,
+                temperature=0.7,
+                max_tokens=2048,
+            )
+            
+            ai_generated_content = response.choices[0].message.content
+            
+            filename = f"project_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.md"
+            file_path = str(Path('exports') / filename)
+            
+            Path('exports').mkdir(exist_ok=True)
+            
+            with open(file_path, 'w') as f:
+                f.write(ai_generated_content)
+            
+            export = Export(
+                filename=filename,
+                original_name=f"Project for {repo_url.split('/')[-1]}",
+                user_type=user_type,
+                repository=repo_url,
+                file_path=file_path,
+                action='new_chat',
+                user_id=session['user_id'],
+                is_deleted=False
+            )
+            
+            db.session.add(export)
+            db.session.commit()
+            
+            flash('Successfully created new chat and generated project outline!', 'success')
+            return redirect(url_for('history_detail', entry_id=export.id))
+            
+        except ImportError:
+            flash('AI service not available. Please check your configuration.', 'error')
+            return redirect(url_for('new_chat'))
+        except Exception as e:
+            flash(f'Error creating new chat: {e}', 'error')
+            return redirect(url_for('new_chat'))
+
+
 if __name__ == '__main__':
     init_db()
     migrate_json_to_db()
