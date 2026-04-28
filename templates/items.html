@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Export Items</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 2rem; background: #f4f7fb; }
+        .container { max-width: 960px; margin: 0 auto; background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 10px 28px rgba(0,0,0,0.08); }
+        h1 { margin-top: 0; }
+        .summary { margin-bottom: 1rem; color: #4b5563; }
+        .item-list { width: 100%; border-collapse: collapse; }
+        .item-list th, .item-list td { padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; }
+        .item-list th { text-align: left; background: #f8fafc; }
+        .item-list tr:hover { background: #f9fbff; }
+        .actions { margin-top: 1.25rem; }
+        .button { display: inline-flex; align-items: center; justify-content: center; padding: 0.8rem 1.2rem; border-radius: 8px; background: #2563eb; color: white; text-decoration: none; }
+        .button.secondary { background: #6b7280; }
+        .empty { color: #6b7280; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Saved Export Items</h1>
+        <p class="summary">This page displays all records from <code>data_exports.json</code>. There are {{ exports|length }} items loaded.</p>
+
+        {% if exports %}
+            <table class="item-list">
+                <thead>
+                    <tr>
+                        <th>Filename</th>
+                        <th>User Type</th>
+                        <th>Repository</th>
+                        <th>Date</th>
+                        <th>File Exists</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in exports %}
+                        <tr>
+                            <td>{{ item.filename }}</td>
+                            <td>{{ item.user_type or 'N/A' }}</td>
+                            <td>{{ item.repository or 'N/A' }}</td>
+                            <td>{{ item.date or 'N/A' }}</td>
+                            <td>{{ 'Yes' if item.file_path else 'No' }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="empty">No export items are available in data_exports.json.</p>
+        {% endif %}
+
+        <div class="actions">
+            <a class="button" href="{{ url_for('history') }}">View history ({{ history_count }} available)</a>
+            <a class="button secondary" href="{{ url_for('saved_sessions') }}">Saved session selection</a>
+        </div>
+    </div>
+</body>
+</html>

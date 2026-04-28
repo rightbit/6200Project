@@ -57,7 +57,20 @@ Run the Flask web application:
 python web_app.py
 ```
 
-Then open your web browser and navigate to:
+Then open your web browser and navigate to one of the following:
+```
+http://localhost:8080/
+```
+
+or
+
+```
+http://127.0.0.1:8080/
+```
+
+The home page shows all saved export items from `data_exports.json`.
+
+For session selection, browse to:
 ```
 http://localhost:8080/saved_sessions
 ```
@@ -68,7 +81,18 @@ or
 http://127.0.0.1:8080/saved_sessions
 ```
 
-Use the form to load an existing saved session or start a new chat. After submitting, you will be redirected to `/chat` to continue.
+To inspect file-backed exports, use:
+```
+http://localhost:8080/history
+```
+
+or
+
+```
+http://127.0.0.1:8080/history
+```
+
+Use the history page to choose an available export by filename and view the contents of the referenced file.
 
 **Note:** Port 8080 is used instead of 5000 to avoid conflicts with macOS AirPlay Receiver.
 

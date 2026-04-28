@@ -203,6 +203,45 @@ Build a Flask session selection flow that allows users to resume a saved session
 - `saved_session.json` (if not already present)
 
 ---
-# Chunk 6: ...
+# Chunk 6: Data Rendering and History Lookup
 
-##
+## Goals
+Extend the Flask app so users can view all stored export records and inspect individual saved export contents from `data_exports.json`.
+
+## Requirements
+1. Create a route `/history` that allows the user to choose an entry from `data_exports.json`.
+2. This route must:
+   - read and parse all data from `data_exports.json`
+   - pass the full collection to a Jinja2 template for rendering
+3. The Jinja2 template must use a `for` loop to iterate over the data collection and generate HTML for every item.
+4. Each item should display enough details so the user can identify it by filename, date, repository, and user type.
+6. The `/history` page should list only entries whose `file_path` exists on disk.
+7. When the user chooses an entry, load the selected file and display its contents on a separate page.
+
+## Deliverables
+- Updated `web_app.py` with:
+  - a main GET route for `/history` route that lists available file-backed exports
+  - a route that loads and displays the selected file contents
+  - JSON parsing logic for `data_exports.json`
+- New or updated templates:
+  - `templates/items.html` or similar for the item list
+  - `templates/history.html` for selection of file-backed exports
+  - `templates/history_detail.html` for displaying file contents
+
+## Tasks
+1. Add a `/history` route in `web_app.py` that filters `data_exports.json` entries to only those with existing `file_path` files.
+2. Pass the parsed item collection to a Jinja2 template.
+3. Build a template that loops through the item collection and renders HTML for each export record.
+4. Create a template for `/history` that lets the user select an entry by filename.
+5. Add a route to load the selected entry's file contents and render it on its own page.
+6. Ensure missing files are excluded from history and do not appear for selection.
+7. Update the README with instructions for `/history`.
+
+## Files to create
+- `web_app.py`
+- `templates/items.html`
+- `templates/history.html`
+- `templates/history_detail.html`
+- `data_exports.json` (if not already present)
+
+---
