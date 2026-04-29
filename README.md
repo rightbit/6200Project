@@ -438,6 +438,74 @@ Files are saved with a timestamp to prevent overwriting and are tracked in `data
 - Check that your API key is valid and active
 - Ensure you haven't exceeded the free tier limits
 
+## Heroku Deployment
+
+The application is configured for deployment on Heroku with the following files:
+
+- `Procfile` - Tells Heroku how to start the web process
+- `runtime.txt` - Specifies the Python version for Heroku
+- `requirements.txt` - Lists all Python dependencies
+
+### Deploy to Heroku
+
+1. **Install Heroku CLI** (if not already installed):
+   ```bash
+   # On macOS with Homebrew
+   brew install heroku/brew/heroku
+
+   # Or download from https://devcenter.heroku.com/articles/heroku-cli
+   ```
+
+2. **Login to Heroku**:
+   ```bash
+   heroku login
+   ```
+
+3. **Create a new Heroku app**:
+   ```bash
+   heroku create your-app-name
+   ```
+
+4. **Set environment variables** in Heroku:
+   ```bash
+   heroku config:set FLASK_SECRET_KEY="your-secure-secret-key-here"
+   heroku config:set GROQ_API_KEY="your-groq-api-key-here"
+   heroku config:set FLASK_ENV="production"
+   heroku config:set DATABASE_URL="sqlite:///app.db"
+   heroku config:set SAVE_FOLDER_PATH="exports"
+   heroku config:set AI_MODEL="llama3-8b-8192"
+   heroku config:set AI_API_BASE_URL="https://api.groq.com"
+   ```
+
+5. **Deploy to Heroku**:
+   ```bash
+   git add .
+   git commit -m "Ready for Heroku deployment"
+   git push heroku main
+   ```
+
+6. **Open your deployed app**:
+   ```bash
+   heroku open
+   ```
+
+### Heroku Troubleshooting
+
+**Error: "No web processes running" (H14)**
+- Ensure `Procfile` exists with `web: gunicorn web_app:app`
+- Check that `gunicorn` is in `requirements.txt`
+- Verify the app starts locally with `gunicorn web_app:app`
+
+**Error: "Application Error"**
+- Check Heroku logs: `heroku logs --tail`
+- Ensure all environment variables are set
+- Verify database initialization works
+
+**Database Issues**
+- SQLite works on Heroku but data is ephemeral
+- For persistent data, consider upgrading to PostgreSQL
+- Database is recreated on each deploy
+
 ## Future Enhancements
 
 - Full GitHub repository indexing and analysis
