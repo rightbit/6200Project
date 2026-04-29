@@ -19,14 +19,22 @@ from flask import (
     flash,
     get_flashed_messages,
     session,
+    jsonify,
 )
 from flask_sqlalchemy import SQLAlchemy
 from functools import wraps
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'change-this-for-local-testing')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///app.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Set Flask environment
+app.config['ENV'] = os.environ.get('FLASK_ENV', 'development')
 
 db = SQLAlchemy(app)
 
@@ -68,6 +76,19 @@ class Export(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     user = db.relationship('User', backref='exports')
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'filename': self.filename,
+            'original_name': self.original_name,
+            'date': self.date.isoformat() if self.date else None,
+            'user_type': self.user_type,
+            'repository': self.repository,
+            'file_path': self.file_path,
+            'action': self.action,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
 
 def generate_salt():
     """Generate a random salt for password hashing."""
@@ -93,31 +114,6 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
-    __tablename__ = 'exports'
-
-    id = db.Column(db.Integer, primary_key=True)
-    filename = db.Column(db.String(255), nullable=False)
-    original_name = db.Column(db.String(255))
-    date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    user_type = db.Column(db.String(100))
-    repository = db.Column(db.String(500))
-    file_path = db.Column(db.String(1024))
-    action = db.Column(db.String(100))
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    is_deleted = db.Column(db.Boolean, default=False, nullable=False)
-    deleted_at = db.Column(db.DateTime, nullable=True)
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'filename': self.filename,
-            'original_name': self.original_name,
-            'date': self.date.isoformat() if self.date else None,
-            'user_type': self.user_type,
-            'repository': self.repository,
-            'file_path': self.file_path,
-            'action': self.action,
-        }
 
 
 def init_db():
@@ -658,6 +654,38 @@ Please return the formatted markdown document."""
         except Exception as e:
             flash(f'Error creating new chat: {e}', 'error')
             return redirect(url_for('new_chat'))
+
+
+@app.route('/api/v1/items', methods=['GET'])
+@login_required
+def api_items():
+    """API endpoint to get all export items for the authenticated user."""
+    with app.app_context():
+        exports = Export.query.filter_by(
+            user_id=session['user_id'],
+            is_deleted=False
+        ).order_by(Export.created_at.desc()).all()
+        
+        return jsonify({
+            'items': [export.to_dict() for export in exports]
+        })
+
+
+@app.route('/api/v1/items/<int:item_id>', methods=['GET'])
+@login_required
+def api_item_detail(item_id):
+    """API endpoint to get a specific export item by ID."""
+    with app.app_context():
+        export = Export.query.filter_by(
+            id=item_id,
+            user_id=session['user_id'],
+            is_deleted=False
+        ).first()
+        
+        if not export:
+            return jsonify({'error': 'Item not found'}), 404
+        
+        return jsonify(export.to_dict())
 
 
 if __name__ == '__main__':

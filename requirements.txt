@@ -1,6 +1,8 @@
-groq
-python-dotenv
-PyPDF2
-python-docx
-Flask
-Flask-SQLAlchemy
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+groq==0.4.1
+python-dotenv==1.0.0
+PyPDF2==3.0.1
+python-docx==1.1.0
+gunicorn==21.2.0
+requests==2.31.0

@@ -63,8 +63,7 @@
                             <td class="action-cell">
                                 <div class="button-group">
                                     {% if item.file_path %}
-                                        <a class="button success" href="{{ url_for('history_detail', entry_id=item.id) }}">View</a>
-                                        <a class="button" href="{{ url_for('history_detail', entry_id=item.id) }}">Update</a>
+                                        <a class="button primary" href="{{ url_for('history_detail', entry_id=item.id) }}">View/Update</a>
                                     {% else %}
                                         <span style="color: #9ca3af; font-size: 12px;">No file</span>
                                     {% endif %}

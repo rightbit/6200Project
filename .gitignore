@@ -144,6 +144,26 @@ ENV/
 env.bak/
 venv.bak/
 
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Export files (optional - uncomment if you want to exclude generated exports)
+# exports/
+# *.md
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
 # Spyder project settings
 .spyderproject
 .spyproject

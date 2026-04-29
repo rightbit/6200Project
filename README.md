@@ -18,46 +18,100 @@ The goal of this program is to create a chatbot that will help product managers 
    cd 6200Project
    ```
 
-2. **Install required Python packages:**
+2. **Create virtual environment (recommended):**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+
+3. **Install required Python packages:**
    ```bash
    pip install -r requirements.txt
    ```
-   * May need to run pip3 or python3 -m pip instead
+   * May need to run `pip3` or `python3 -m pip` instead
 
-python3 -m pip install -r requirements.txt
-
-3. **Set up your environment file:**
+4. **Set up your environment file:**
    - Copy `.env.example` to `.env`:
      ```bash
      cp .env.example .env
      ```
    - Get your free Groq API key from [https://console.groq.com](https://console.groq.com)
-   - Open `.env` and replace `your_groq_api_key_here` with your actual API key:
+   - Open `.env` and replace the placeholder values with your actual configuration:
      ```
      GROQ_API_KEY=gsk_your_actual_key_here
-     ```
-   - Set your save folder path (optional - will be prompted if not set):
-     ```
-     SAVE_FOLDER_PATH=~/Documents/JiraExports
+     FLASK_SECRET_KEY=your-secure-secret-key-at-least-32-chars
+     SAVE_FOLDER_PATH=exports
      ```
 
 ## Database Setup
 
-The application uses **SQLite** for data persistence (Chunk 7 and later).
+The application uses **SQLite** for data persistence.
 
 When you run `web_app.py` for the first time:
 1. A new SQLite database file (`app.db`) will be created automatically.
 2. All database tables will be initialized.
-3. If a `data_exports.json` file exists, its data will be automatically migrated to the database.
+3. Demo user accounts will be created.
+4. If a `data_exports.json` file exists, its data will be automatically migrated to the database.
 
 If you need to manually migrate data from `data_exports.json`, run:
 ```bash
 python migrate_json_to_db.py
 ```
 
-The database stores all export records and is the primary data source for the web interface starting with Chunk 7.
+The database stores all export records and is the primary data source for the web interface.
+
+## Environment Variables
+
+The application uses the following environment variables (configured in `.env`):
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `FLASK_SECRET_KEY` | Secret key for Flask sessions | `change-this-for-local-testing` |
+| `FLASK_ENV` | Flask environment (`development` or `production`) | `development` |
+| `DATABASE_URL` | Database connection string | `sqlite:///app.db` |
+| `SAVE_FOLDER_PATH` | Folder for saving export files | `exports` |
+| `GROQ_API_KEY` | Groq API key for AI functionality | *Required* |
+| `AI_MODEL` | AI model to use | `llama3-8b-8192` |
+| `AI_API_BASE_URL` | AI API base URL | `https://api.groq.com` |
+
+## Final Submission Checklist
+
+Before submitting your project, ensure:
+
+- ✅ `requirements.txt` exists with all dependencies
+- ✅ `.env.example` exists with all required variables
+- ✅ `.env` is NOT committed to Git (contains sensitive data)
+- ✅ `.gitignore` excludes sensitive and generated files
+- ✅ README documents all routes and setup instructions
+- ✅ README explains demo accounts (`demo-pm`/`demo`, `demo-dev`/`demo`)
+- ✅ All configuration comes from environment variables
+- ✅ App runs with `python web_app.py` (development)
+- ✅ App runs with `gunicorn web_app:app` (production)
+- ✅ Database migrations run successfully on startup
+- ✅ Authentication protects all routes except login/register
+- ✅ API routes return proper JSON responses
+- ✅ Users can only access their own exports
+- ✅ Project folder is ready to zip for submission
 
 ## Running the Program
+
+### Local Development Setup
+
+1. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Configure environment:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your API keys and settings
+   ```
+
+3. **Initialize database:**
+   ```bash
+   python web_app.py  # This will create tables and migrate data
+   ```
 
 ### Command Line Interface (CLI)
 
@@ -68,36 +122,59 @@ python main.py
 
 ### Web Interface
 
-Run the Flask web application:
+**Development server:**
 ```bash
 python web_app.py
 ```
 
-The application will automatically initialize the database on startup.
+**Production server (WSGI):**
+```bash
+gunicorn web_app:app --bind 0.0.0.0:8000
+```
 
-Then open your web browser and navigate to one of the following:
+Then open your web browser and navigate to:
 ```
 http://localhost:8080/
 ```
 
-or
+### Demo Accounts
 
-```
-http://127.0.0.1:8080/
-```
+The application includes two demo accounts for testing:
 
-The home page shows all saved export items from the database.
+- **Project Manager:** `demo-pm` / `demo`
+- **Developer:** `demo-dev` / `demo`
 
-For session selection, browse to:
-```
-http://localhost:8080/saved_sessions
-```
+Use these accounts to explore all features without creating your own account.
 
-or
+## Available Routes
 
-```
-http://127.0.0.1:8080/saved_sessions
-```
+### Authentication Routes
+- `GET  /register` - User registration form
+- `POST /register` - Process user registration
+- `GET  /login` - User login form
+- `POST /login` - Process user login
+- `GET  /logout` - User logout
+
+### Main Application Routes
+- `GET  /` - Redirects to `/items` (requires login)
+- `GET  /items` - List all user's export items (requires login)
+- `GET  /saved_sessions` - Session selection form (requires login)
+- `POST /saved_sessions` - Process session selection (requires login)
+- `GET  /chat` - Chat interface (requires login)
+- `GET  /history` - List export history (requires login)
+- `POST /history` - Choose history entry (requires login)
+- `GET  /history/view/<export_id>` - View export details (requires login)
+- `POST /history/update/<export_id>` - Update export with AI (requires login)
+- `POST /items/delete/<export_id>` - Soft delete export (requires login)
+- `GET  /new_chat` - Start new chat form (requires login)
+- `POST /new_chat` - Create new chat with AI (requires login)
+
+### API Routes (JSON)
+- `GET  /api/v1/items` - Get all user's export items as JSON (requires login)
+- `GET  /api/v1/items/<item_id>` - Get specific export item as JSON (requires login)
+
+### Static Files
+- `/static/*` - CSS, JavaScript, and other static assets
 
 To inspect file-backed exports, use:
 ```
@@ -186,6 +263,97 @@ When you click **Update**, you'll be taken to the history detail page where you 
 6. You'll be redirected back to see the updated content
 
 **Important:** Deleted exports are hidden from normal views but their data remains in the database. To permanently remove data, contact your system administrator.
+
+### API Endpoints (Chunk 10)
+
+The application provides a REST API for programmatic access to export data. All API endpoints require authentication.
+
+#### Authentication
+All API endpoints require a logged-in user session. Make requests to web endpoints first to establish authentication, or implement session-based authentication in your API client.
+
+#### Endpoints
+
+**GET /api/v1/items**
+Returns a JSON array of all export items owned by the authenticated user.
+
+Example request:
+```bash
+curl -X GET http://localhost:8080/api/v1/items \
+  -H "Cookie: session=<your-session-cookie>"
+```
+
+Example response:
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "filename": "jira_export.md",
+      "original_name": null,
+      "date": "2026-04-28T14:30:00",
+      "user_type": "Product Manager",
+      "repository": "https://github.com/example/repo",
+      "file_path": "exports/jira_export.md",
+      "action": "new_chat",
+      "created_at": "2026-04-28T14:30:00"
+    }
+  ]
+}
+```
+
+**GET /api/v1/items/{item_id}**
+Returns a single export item by ID, if owned by the authenticated user.
+
+Example request:
+```bash
+curl -X GET http://localhost:8080/api/v1/items/1 \
+  -H "Cookie: session=<your-session-cookie>"
+```
+
+Example response (success):
+```json
+{
+  "id": 1,
+  "filename": "jira_export.md",
+  "original_name": null,
+  "date": "2026-04-28T14:30:00",
+  "user_type": "Product Manager",
+  "repository": "https://github.com/example/repo",
+  "file_path": "exports/jira_export.md",
+  "action": "new_chat",
+  "created_at": "2026-04-28T14:30:00"
+}
+```
+
+Example response (not found):
+```json
+{
+  "error": "Item not found"
+}
+```
+Status: 404 Not Found
+
+#### Error Responses
+
+- **401 Unauthorized**: Returned when user is not authenticated
+  ```json
+  {
+    "error": "Authentication required"
+  }
+  ```
+
+- **404 Not Found**: Returned when item doesn't exist or user doesn't own it
+  ```json
+  {
+    "error": "Item not found"
+  }
+  ```
+
+#### Notes
+- All responses are JSON-formatted
+- Deleted items are automatically excluded from API responses
+- Users can only access items they own
+- Timestamps are in ISO 8601 format
 
 ### Saved Chat Files
 

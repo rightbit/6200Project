@@ -676,4 +676,381 @@ Allow users to start a new chat by providing a GitHub repository URL and project
 - Routes are accessible and protected by login decorator 
 
 --- 
-# CHunk 10
+# Chunk 10: Protected API Endpoints
+
+## Goals
+
+Add a versioned API layer to the Flask application so authenticated
+users can retrieve their saved export records as JSON. The API should
+follow the same ownership rules as the web interface.
+
+## Requirements
+
+1.  Add API routes under a versioned prefix such as `/api/v1/`.
+2.  API routes must be protected and require a logged-in user.
+3.  Create an endpoint that returns a JSON list of all export items
+    owned by the authenticated user.
+4.  Create a dynamic endpoint that returns one specific export item by
+    ID.
+5.  Users must only be able to access their own items.
+6.  Deleted records should not be returned by the API.
+7.  If a requested item does not exist, is deleted, or belongs to
+    another user, return `404 Not Found`.
+8.  API responses should use JSON.
+9.  API error responses should also use JSON.
+
+## Example Endpoints
+
+GET /api/v1/items\
+GET /api/v1/items/`<int:item_id>`{=html}
+
+## Example JSON Response
+
+``` json
+{
+  "items": [
+    {
+      "id": 1,
+      "filename": "jira_export.md",
+      "date": "2026-04-28T14:30:00",
+      "user_type": "Product Manager",
+      "repository": "https://github.com/example/repo",
+      "file_path": "exports/jira_export.md",
+      "action": "new_chat",
+      "created_at": "2026-04-28T14:30:00"
+    }
+  ]
+}
+```
+
+## Deliverables
+
+-   Updated `web_app.py` with:
+    -   protected `/api/v1/items` endpoint
+    -   protected `/api/v1/items/<int:item_id>` endpoint
+    -   JSON serialization helper for `Export`
+    -   JSON error handling
+    -   user ownership filtering
+-   Updated README with:
+    -   API route documentation
+    -   example requests
+    -   example JSON responses
+    -   authentication requirement notes
+
+## Tasks
+
+1.  Add a helper method or function to convert an `Export` record into a
+    dictionary.
+2.  Create a protected `GET /api/v1/items` route.
+3.  In the list endpoint:
+    -   check that the user is logged in
+    -   query only records where `Export.user_id == session["user_id"]`
+    -   exclude records where `is_deleted == True`
+    -   return the results as JSON
+4.  Create a protected `GET /api/v1/items/<int:item_id>` route.
+5.  In the single-item endpoint:
+    -   check that the user is logged in
+    -   query by item ID
+    -   require `Export.user_id == session["user_id"]`
+    -   require `Export.is_deleted == False`
+    -   return the item as JSON if found
+6.  If the item does not exist, return:
+
+``` json
+{
+  "error": "Item not found"
+}
+```
+
+with HTTP status code `404`.
+
+7.  If the user is not authenticated, return:
+
+``` json
+{
+  "error": "Authentication required"
+}
+```
+
+with HTTP status code `401`.
+
+8.  Test that one user cannot access another user's export by ID.
+9.  Test that deleted records are excluded from the API list.
+10. Update the README with API examples.
+
+## Files to create or modify
+
+-   `web_app.py`
+-   `README.md`
+-   Optional: `tests/test_api.py`
+
+---
+# Chunk 10: Protected API Endpoints - COMPLETED ✓
+
+## Implementation Summary
+
+✅ **API Endpoints Added:**
+- `GET /api/v1/items` - Returns JSON list of authenticated user's export items
+- `GET /api/v1/items/<int:item_id>` - Returns specific export item by ID
+
+✅ **Security Features:**
+- All endpoints protected with `@login_required` decorator
+- Users can only access their own export records
+- Deleted records automatically excluded from responses
+- Proper error handling for unauthorized access
+
+✅ **JSON Responses:**
+- Proper JSON serialization using `jsonify()`
+- ISO 8601 timestamp formatting
+- Consistent error response format
+- All required fields included in responses
+
+✅ **Testing & Validation:**
+- Created `test_api.py` with comprehensive API tests
+- Tests verify authentication requirements
+- Tests validate JSON response structure
+- Tests confirm user ownership filtering
+- All tests pass successfully
+
+✅ **Documentation:**
+- Updated README.md with API endpoint documentation
+- Included example requests and responses
+- Added authentication requirement notes
+- Documented error response formats
+
+## Files Created/Modified
+- `web_app.py` - MODIFIED: Added API routes and JSON serialization
+- `README.md` - MODIFIED: Added API documentation section
+- `test_api.py` - NEW: Comprehensive API endpoint tests
+
+## Testing Results
+- Flask app starts successfully
+- API endpoints properly protected by authentication
+- JSON responses correctly formatted
+- User ownership filtering works correctly
+- Error handling functions as expected
+- All automated tests pass
+
+
+# Chunk 11: Final Packaging, Configuration, and Deployment Readiness
+
+## Goals
+Finalize the project so it can be zipped, submitted, installed, configured, and run consistently in a production-style environment using environment variables and a WSGI server.
+
+## Requirements
+1. The project must include a `requirements.txt` file.
+2. The project must include a `.env.example` file.
+3. All configuration variables must be loaded from environment variables.
+4. The `.gitignore` file must be up to date.
+5. The README must document all available routes.
+6. The Flask app must be runnable with a WSGI server such as Gunicorn.
+7. The project folder must be ready to zip and submit.
+8. Local development setup instructions must be clear.
+9. Sensitive files must not be included in Git or the final zip unless required.
+10. The project should include a final checklist for submission.
+
+## Configuration Requirements
+
+Move all hardcoded configuration values into environment variables, including:
+
+```text
+FLASK_SECRET_KEY
+DATABASE_URL
+SAVE_FOLDER_PATH
+AI_API_KEY
+AI_MODEL
+AI_API_BASE_URL
+FLASK_ENV
+```
+
+Create a `.env.example` file:
+
+```env
+FLASK_SECRET_KEY=replace-with-a-secure-secret-key
+DATABASE_URL=sqlite:///app.db
+SAVE_FOLDER_PATH=exports
+AI_API_KEY=your-api-key-here
+AI_MODEL=your-model-name
+AI_API_BASE_URL=https://api.example.com
+FLASK_ENV=development
+```
+
+## Required `requirements.txt` Entries
+
+The final `requirements.txt` should include all project dependencies, such as:
+
+```text
+Flask
+Flask-SQLAlchemy
+python-dotenv
+gunicorn
+requests
+```
+
+Add any other packages actually used by the project.
+
+## WSGI / Gunicorn Requirement
+
+The Flask application should expose an app object that Gunicorn can run.
+
+Example command:
+
+```bash
+gunicorn web_app:app
+```
+
+Optional local command with port:
+
+```bash
+gunicorn web_app:app --bind 0.0.0.0:8000
+```
+
+## README Route Documentation
+
+Update the README to list all available routes, including:
+
+```text
+GET  /register
+POST /register
+GET  /login
+POST /login
+GET  /logout
+GET  /saved_sessions
+POST /saved_sessions
+GET  /chat
+GET  /items
+GET  /history
+GET  /history/view/<export_id>
+POST /history/update/<export_id>
+POST /items/delete/<export_id>
+GET  /api/v1/items
+GET  /api/v1/items/<item_id>
+```
+
+## Deliverables
+- Final `requirements.txt`
+- Final `.env.example`
+- Updated `.gitignore`
+- Updated `README.md`
+- Updated `web_app.py` using environment variables
+- Confirmed WSGI-compatible Flask app
+- Final project folder ready to zip
+
+## Tasks
+1. Review all project files for hardcoded configuration values.
+2. Move configuration values into environment variables.
+3. Add `python-dotenv` support for local development.
+4. Create or update `.env.example`.
+5. Make sure `.env` is ignored by Git.
+6. Create or update `requirements.txt`.
+7. Add `gunicorn` to `requirements.txt`.
+8. Confirm `web_app.py` exposes the Flask app as `app`.
+9. Confirm the project can run locally with:
+
+```bash
+flask run
+```
+
+10. Confirm the project can run with Gunicorn:
+
+```bash
+gunicorn web_app:app --bind 0.0.0.0:8000
+```
+
+11. Update `.gitignore` to exclude:
+   - `.env`
+   - `__pycache__/`
+   - `*.pyc`
+   - virtual environment folders
+   - local database files if appropriate
+   - generated export files if appropriate
+   - IDE/editor files
+12. Update README setup instructions.
+13. Update README route documentation.
+14. Add README instructions for demo accounts:
+   - `demo-pm / demo`
+   - `demo-dev / demo`
+15. Add README instructions for database migrations.
+16. Add README instructions for zipping the project.
+17. Test registration, login, logout, item history, update, soft delete, and API routes.
+18. Zip the final project folder for submission.
+
+## Files to create or modify
+- `requirements.txt`
+- `.env.example`
+- `.gitignore`
+- `README.md`
+- `web_app.py`
+- Any configuration or migration files
+
+## Final Submission Checklist
+- `requirements.txt` exists
+- `.env.example` exists
+- `.env` is not committed
+- `.gitignore` is current
+- README lists all routes
+- README explains setup and launch commands
+- README explains demo logins
+- All configuration comes from environment variables
+- App runs with `flask run`
+- App runs with `gunicorn web_app:app`
+- Database migrations run successfully
+- Auth-protected routes require login
+- API routes return JSON
+- Users can only access their own exports
+- Project can be zipped for submission
+
+---
+# Chunk 11: Final Packaging, Configuration, and Deployment Readiness - COMPLETED ✓
+
+## Implementation Summary
+
+✅ **Requirements.txt Updated:**
+- Added all project dependencies with pinned versions
+- Included Flask==3.0.3, Flask-SQLAlchemy==3.1.1, gunicorn==21.2.0
+- Added python-dotenv, requests, PyPDF2, python-docx, groq
+
+✅ **Environment Configuration:**
+- Updated `.env.example` with all required environment variables
+- Added FLASK_SECRET_KEY, DATABASE_URL, SAVE_FOLDER_PATH, GROQ_API_KEY, etc.
+- Updated `web_app.py` to load environment variables with `python-dotenv`
+
+✅ **WSGI/Gunicorn Support:**
+- Confirmed Flask app exposes `app` object for Gunicorn
+- Tested `gunicorn web_app:app` command successfully
+- App runs in production mode with Gunicorn
+
+✅ **Git Configuration:**
+- Updated `.gitignore` with comprehensive exclusions
+- Excludes `.env`, `__pycache__/`, `*.db`, virtual environments, IDE files
+- Prevents sensitive data and generated files from being committed
+
+✅ **README Documentation:**
+- Added complete route documentation for all endpoints
+- Included setup instructions for local development and production
+- Added demo account information (`demo-pm`/`demo`, `demo-dev`/`demo`)
+- Documented environment variables and configuration
+- Added final submission checklist
+
+✅ **Testing & Validation:**
+- Flask app runs with `python web_app.py` (development)
+- Flask app runs with `gunicorn web_app:app` (production)
+- All authentication routes protected correctly
+- API endpoints return proper JSON responses
+- Database migrations work on startup
+- User ownership filtering functions correctly
+
+## Files Created/Modified
+- `requirements.txt` - MODIFIED: Added all dependencies with versions
+- `.env.example` - MODIFIED: Added all environment variables
+- `.gitignore` - MODIFIED: Added comprehensive exclusions
+- `README.md` - MODIFIED: Added complete documentation and setup instructions
+- `web_app.py` - MODIFIED: Added environment variable loading
+
+## Final Project Status
+- ✅ Ready for local development
+- ✅ Ready for production deployment
+- ✅ Ready for submission (zip-ready)
+- ✅ All configuration externalized
+- ✅ Sensitive data protected
+- ✅ Comprehensive documentation provided
