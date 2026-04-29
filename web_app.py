@@ -197,6 +197,11 @@ def migrate_json_to_db():
             return
 
 
+# Initialize database and migrate data when module is imported
+init_db()
+migrate_json_to_db()
+
+
 def load_json_file(path, default):
     if not path.exists():
         return default
@@ -689,6 +694,4 @@ def api_item_detail(item_id):
 
 
 if __name__ == '__main__':
-    init_db()
-    migrate_json_to_db()
     app.run(debug=True, host='127.0.0.1', port=8080)
